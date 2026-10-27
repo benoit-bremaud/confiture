@@ -7,12 +7,13 @@ UML-first, proportional: use cases (phase 0) are validated before any realisatio
 
 ## Scope and goals
 
-A fully local personal voice assistant for the home, built on recycled Raspberry Pis
-(see [specs](specs/voice-assistant-use-cases.md) for NFR-1 to NFR-4).
+A personal voice assistant for the home whose voice processing stays local (ADR-0001), built
+on recycled Raspberry Pis. NFR-1 to NFR-4: [use cases](specs/voice-assistant-use-cases.md);
+REQ-1 to REQ-8 and open questions: [needs](specs/voice-assistant-needs.md).
 
 ## Stakeholders
 
-- Household member — talks to the assistant.
+- Household member — talks to the assistant; either an Adult or a Child (restricted, REQ-3).
 - Maintainer — sets up and runs the system (today: the owner).
 
 ## How to read this folder

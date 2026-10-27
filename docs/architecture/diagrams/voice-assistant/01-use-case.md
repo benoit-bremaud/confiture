@@ -19,6 +19,8 @@ title: uc — confiture — voice assistant
 ---
 flowchart LR
   Household["👤 Household member"]
+  Adult["👤 Adult"]
+  Child["👤 Child"]
   Maintainer["👤 Maintainer"]
   HomeDevice["«actor» Home device"]
   WeatherSvc["«actor» Weather service"]
@@ -44,8 +46,10 @@ flowchart LR
     end
   end
 
+  Adult -->|"▷ generalization"| Household
+  Child -->|"▷ generalization"| Household
   Household --- UC1
-  Household --- UC2
+  Adult --- UC2
   Household --- UC3
   Household --- UC4
   Household --- UC6
@@ -74,5 +78,9 @@ flowchart LR
 - Room sensors (the two Pi 1 boards) are **inside** the subject: they are part of confiture, not
   actors. External systems: *Home device* (lights, plugs…), *Weather service* and *Music source*
   (streaming service or local library — to choose in phase 1).
+- *Adult* and *Child* specialise *Household member* and inherit its goals; only *Adult* may
+  control home devices (UC2). Child-specific limits (filtered answers, capped volume) are
+  business rules of REQ-3, not separate use cases. Mermaid has no hollow-triangle arrow: the
+  `▷ generalization` label stands for it.
 - `Maintainer` is a role, today played by the owner; a household member may also play it.
 - Internet is allowed for online services, voice stays local (ADR-0001).

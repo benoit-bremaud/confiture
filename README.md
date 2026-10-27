@@ -1,18 +1,19 @@
 # confiture 🍓
 
-A fully local, personal voice assistant for the home, built from recycled Raspberry Pis.
+A personal voice assistant for the home whose voice processing stays local, built from recycled Raspberry Pis.
 Old fruit, turned into something that keeps.
 
 ## Vision
 
 - Custom wake word (our own "Alexa"), trained with openWakeWord.
-- 100 % local: no voice data leaves the house.
+- Voice stays local: no audio and no full transcript leaves the house; online services
+  (weather, radio) only receive minimal queries (ADR-0001).
 - Old Pis get a second life as voice satellites and room sensors.
 
 ## Architecture (draft — to be formalised in UML)
 
 - **Satellite** (Raspberry Pi 3): microphone + speaker, wake-word detection, streams audio to the brain.
-- **Brain** (PC or second-hand mini-PC): speech-to-text, intent handling, text-to-speech, optional local LLM.
+- **Brain** (host to decide: homelab Pi 5, old laptop, or both): speech-to-text, intent handling, text-to-speech, optional local LLM.
 - **Sensors** (Raspberry Pi 1 ×2): room data (temperature, humidity…) the assistant can query.
 
 Tool candidates (versions to be verified before use): Home Assistant Assist, Wyoming protocol,

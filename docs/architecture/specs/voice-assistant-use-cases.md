@@ -8,8 +8,9 @@ Textual specifications of [`01-use-case.md`](../diagrams/voice-assistant/01-use-
 - **NFR-1 — Voice stays local**: no audio and no full transcript leaves the home network; only
   the minimal query an online service needs (e.g. a city for the weather, a track name) may go
   out (ADR-0001).
-- **NFR-2 — Responsiveness**: spoken answer starts within 3 s of the end of the request
-  (estimate, to be measured on real hardware).
+- **NFR-2 — Responsiveness**: for a known command (local intent, REQ-2) the spoken answer
+  starts within 3 s of the end of the request; the LLM path's target is open (Q7).
+  Estimates, to be measured on real hardware.
 - **NFR-3 — Wake reliability**: at most one false wake per day in normal household noise
   (estimate, to be measured).
 - **NFR-4 — Recycled hardware**: runs on the existing Raspberry Pi 1 ×2 and Pi 3; only the
@@ -47,7 +48,7 @@ Textual specifications of [`01-use-case.md`](../diagrams/voice-assistant/01-use-
 ## UC2 — Control a home device   (status: planned)
 
 - **Level**: user goal
-- **Primary actor**: Household member · **Supporting actor**: Home device
+- **Primary actor**: Adult · **Supporting actor**: Home device
 - **Stakeholders & interests**: Household member — the device does what was asked;
   household — no unintended action.
 - **Preconditions**: the target device is known to the system.
