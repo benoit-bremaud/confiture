@@ -55,9 +55,12 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 - **Q4 — Wake word**: shortlist done (MCDA, weights: wake reliability 30, fun 25, English-like
   pronunciation for training 20, personality fit 15, link to confiture 10): **Pépito 425**,
   Gribouille 355, Pépé 335 (nobody is called "pépé" at home), Ziggy 335; Kiwi 320 and
-  Biscotte 315 dropped. **Decision (owner, 2026-10-27): "Pépé", provisional** — chosen over the
-  top score for its meaning (the elder who cares for everyone and knows a lot); may change
-  later (children's vote still possible). Fallback if it trains badly (NFR-3): Pépito.
+  Biscotte 315 dropped. "Pépé" was then rejected: too many phonetic neighbours ("pété",
+  "bébé", "papé"). New owner constraints: **exactly 2 syllables**, easy to pronounce, studied
+  against confusable words. Second round (false positives 30, ease 20, fun 20, personality 15,
+  English-like 15): **Yuki 430**, Ziggy 420, Kiko 405, Mojo 390 ("bonjour"), Zorglub 380
+  (hard to say), Zouki 360 ("souci"). **Decision (owner, 2026-10-27): Yuki.** Fallback:
+  Ziggy. To measure: false wakes against a list of confusable phrases (NFR-3).
 - **Q5 — Prerequisite**: secure and back up the Home Assistant stack before relying on it.
 - **Q6 — Local or cloud LLM** (REQ-2 vs NFR-1): a cloud LLM would receive the full transcript,
   which NFR-1 forbids. Either the LLM is local (limited by the hardware), or ADR-0001 gets an
