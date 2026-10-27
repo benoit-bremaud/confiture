@@ -16,4 +16,5 @@
 | Satellite | Node with microphone and speaker that detects the wake word and talks with the household. | README |
 | Sensor node | Node that measures a room's conditions (temperature, humidity). | UC3 |
 | Weather service | External online service that returns forecasts for a place and date. Actor. | UC10 |
+| Pépé | The assistant's provisional name and wake word. | Q4 |
 | Wake word | The assistant's spoken name that starts every voice interaction (mot d'activation). | UC5, UC7 |
