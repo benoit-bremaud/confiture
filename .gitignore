@@ -1,0 +1,11 @@
+# OS images
+*.img
+*.img.xz
+*.zip
+
+# Secrets
+.env
+.env.*
+!.env.example
+network-config
+user-data
