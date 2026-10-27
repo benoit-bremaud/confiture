@@ -40,8 +40,8 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 
 ## Open questions (to settle with MCDA, then ADR)
 
-- **Q1 — Child restrictions before speaker recognition**: restricted-by-default with an adult
-  unlock, or restriction per satellite (children's room)? REQ-3 depends on REQ-4 otherwise.
+- ~~**Q1 — Child restrictions before speaker recognition**~~ — resolved by ADR-0002
+  (per-satellite policy, phone unlock with expiry, night schedule).
 - **Q2 — Brain host**: Pi 5 alone, Pi 5 + old laptop for the LLM, or the laptop alone?
   Depends on the Pi 5 RAM and on the homelab load.
 - **Q3 — Second satellite**: which recycled hardware (Pi 1 is too weak for wake word)?
