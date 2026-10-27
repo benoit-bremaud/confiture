@@ -16,4 +16,5 @@
 | NFR-2 | Responsiveness | — | — | — | — | planned |
 | NFR-3 | Wake reliability | — | — | — | — | planned |
 | NFR-4 | Recycled hardware | — | — | — | — | planned |
-| REQ-4 | Speaker recognition (later) | — | — | — | — | deferred |
+| NFR-5 | LLM path latency | ADR-0003 | — | — | — | planned |
+| REQ-4 | Speaker recognition | — | — | — | — | iteration 2 |

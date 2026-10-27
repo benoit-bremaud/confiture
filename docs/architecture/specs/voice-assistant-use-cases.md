@@ -11,6 +11,8 @@ Textual specifications of [`01-use-case.md`](../diagrams/voice-assistant/01-use-
 - **NFR-2 — Responsiveness**: for a known command (local intent, REQ-2) the spoken answer
   starts within 3 s of the end of the request; the LLM path's target is open (Q7).
   Estimates, to be measured on real hardware.
+- **NFR-5 — LLM path**: spoken thinking cue if no answer starts within 2 s; speech starts at
+  the first generated sentence; full answer within 15 s (ADR-0003, to tune after benchmark).
 - **NFR-3 — Wake reliability**: at most one false wake per day in normal household noise
   (estimate, to be measured).
 - **NFR-4 — Recycled hardware**: runs on the existing Raspberry Pi 1 ×2 and Pi 3; only the

@@ -28,8 +28,9 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
   anything else goes to an LLM (owner choice "Mixte").
 - **REQ-3 — Child profile** (actor *Child*): a child may ask filtered questions, play music/radio with a
   capped volume, set timers, later watch a film/video; a child may not control home devices.
-- **REQ-4 — Speaker recognition (later)**: the architecture leaves room to identify who
-  speaks; not built in the first iteration.
+- **REQ-4 — Speaker recognition (iteration 2)**: the assistant recognises the owner's voice
+  (voice embedding enrolled once); not in the first iteration, but promoted to iteration 2
+  by the owner. Replaces the phone unlock of ADR-0002.
 - **REQ-5 — Listening feedback**: the satellite plays a short sound on wake and shows its state
   with an LED (listening, thinking, muted).
 - **REQ-6 — Ducking**: while the assistant listens or answers, connected devices that play
@@ -50,5 +51,5 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 - **Q6 — Local or cloud LLM** (REQ-2 vs NFR-1): a cloud LLM would receive the full transcript,
   which NFR-1 forbids. Either the LLM is local (limited by the hardware), or ADR-0001 gets an
   explicit exception for it. Strongly coupled with Q2.
-- **Q7 — LLM-path latency**: on recycled hardware a local LLM answer may take well over 3 s.
-  Acceptable target for that path, and a spoken "let me think" cue?
+- ~~**Q7 — LLM-path latency**~~ — resolved by ADR-0003 (thinking cue, streamed speech,
+  ≤ 15 s; NFR-5).
