@@ -39,6 +39,12 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 - **REQ-8 — Home Assistant integration**: reuse the existing Home Assistant and Mosquitto
   rather than a parallel stack; home control itself is deferred.
 
+- **REQ-9 — Personality**: kind, gentle and educational first, playful with the children,
+  a little empathetic — without overdoing it.
+- **REQ-10 — Voices**: one female and one male voice to choose from (the children decide);
+  occasionally a fun accent to make the household laugh (available accents to verify).
+- **REQ-11 — Wake word chosen by the children**: shortlist by MCDA, final vote by the children.
+
 ## Open questions (to settle with MCDA, then ADR)
 
 - ~~**Q1 — Child restrictions before speaker recognition**~~ — resolved by ADR-0002
@@ -46,7 +52,11 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 - **Q2 — Brain host**: Pi 5 alone, Pi 5 + old laptop for the LLM, or the laptop alone?
   Depends on the Pi 5 RAM and on the homelab load.
 - **Q3 — Second satellite**: which recycled hardware (Pi 1 is too weak for wake word)?
-- **Q4 — Wake word**: dedicated naming brainstorm (2–3 syllables, rare word).
+- **Q4 — Wake word**: shortlist done (MCDA, weights: wake reliability 30, fun 25, English-like
+  pronunciation for training 20, personality fit 15, link to confiture 10): **Pépito 425**,
+  Gribouille 355, Pépé 335 (nobody is called "pépé" at home), Ziggy 335; Kiwi 320 and
+  Biscotte 315 dropped. **Pending: the children's vote**; the runner-up is the fallback if the
+  winner trains badly (NFR-3).
 - **Q5 — Prerequisite**: secure and back up the Home Assistant stack before relying on it.
 - **Q6 — Local or cloud LLM** (REQ-2 vs NFR-1): a cloud LLM would receive the full transcript,
   which NFR-1 forbids. Either the LLM is local (limited by the hardware), or ADR-0001 gets an
