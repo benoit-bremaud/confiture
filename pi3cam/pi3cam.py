@@ -195,7 +195,8 @@ def on_message(c, userdata, msg):
             presets.pop(selected["preset"], None)
             selected["preset"] = DEFAULT
             save_presets()
-        elif topic == "preset_name/set" and payload:
+        elif topic == "preset_name/set" and payload and not payload.startswith("🗑"):
+            # The 🗑 prefix is reserved for the delete option (QA 2026-10-28: name collision).
             # Typing a name saves the current position under it (the default can be redefined too).
             presets[payload[:30]] = [state["pan"], state["tilt"]]
             selected["preset"] = payload[:30]
