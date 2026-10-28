@@ -150,3 +150,5 @@
   from a 3B model, revisit with the GPU host. Times 2–15 s warm, 19 s on first load.
 - Box DHCP reservation added (Réseau > LAN > LAN DHCP): ProBook `<mac>` →
   `<probook-ip>`, hostname `hp-probook`, rule active; listed next to bb-homelab (<pi5-ip>).
+- Box DHCP reservation added for the Nest Mini: `<mac>` → `<nest-mini-ip>`,
+  hostname `nest-mini-sejour`, rule active.
