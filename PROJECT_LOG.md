@@ -185,3 +185,9 @@
   read only here). Google Translate TTS (cloud) stays installed but unused (NFR-1).
 - Next: Piper (local French TTS) with the voice pipeline; port 8123 does not answer from the LAN
   (HA reached through SSH only).
+- Nest Mini default volume (owner rule): 50 % from 07:00, 30 % from 21:00, for every sound
+  including night alerts (owner choices). HA automation `nest_mini_default_volume` appended to
+  `/config/automations.yaml` (backup `automations.yaml.bak-2026-10-28`); triggers at 07:00,
+  21:00, HA start and the Nest Mini coming back online. `check_config` clean, HA restarted,
+  volume read 0.6 → 0.5 right after start (08:xx). Not yet tracked in a repo (HA config lives
+  in `/mnt/appdata/homeassistant`).
