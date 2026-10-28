@@ -7,8 +7,12 @@ Prototype agent that lets Home Assistant look through and aim the Pi 3 camera ov
 - Publishes a light JPEG (640×360, rotated 180°) every 2 s and right after each move, and a
   1280×720 photo on demand (MCDA option E, 425/500). Use `camera_view: live` in the HA card:
   the default `auto` view only refreshes every 10 s.
-- Exposes through MQTT Discovery: camera, pan and tilt sliders (−100…100), recentre and
-  snapshot buttons, and a privacy switch (off = no capture, no stale image in HA).
+- Exposes through MQTT Discovery: camera, pan and tilt sliders (−100…100), an HD photo button,
+  and a privacy switch (off = no capture, no stale image in HA).
+- Saved positions, minimal UI (MCDA option A, 440/500): one `select` "Position" goes to a saved
+  position; it also offers "🗑 Supprimer « name »" for the current one. One `text` field saves
+  the current position under the typed name (typing the default name redefines it). Unlimited,
+  stored in `~/.config/pi3cam/presets.json` on the Pi.
 - Servo safety stays in the agent: calibrated limits, 1000 µs/s ramp, PWM cut after each move.
   The position is the last commanded one; there is no feedback.
 

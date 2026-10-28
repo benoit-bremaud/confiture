@@ -2,7 +2,7 @@
 """Pi 3 Pan-Tilt camera agent for Home Assistant over MQTT (prototype, confiture#3).
 
 Publishes a JPEG snapshot every INTERVAL seconds and right after each move, and exposes
-pan / tilt sliders, a recentre button and a privacy switch through MQTT Discovery.
+pan / tilt sliders, saved positions, an HD photo and a privacy switch through MQTT Discovery.
 Servo safety lives here, never in HA: positions are clamped to the calibrated limits,
 moves are ramped, and the PWM signal is cut after each move (no position feedback).
 """
@@ -45,6 +45,53 @@ want_hd = threading.Event()
 state = {"pan": 0, "tilt": 0, "camera": "ON"}
 if STATE_FILE.exists():
     state.update(json.loads(STATE_FILE.read_text()))
+
+# Saved positions (MCDA option A, 440/500): name -> [pan, tilt], kept on the Pi.
+PRESETS_FILE = CONF / "presets.json"
+DEFAULT = "Position par défaut"
+presets = {DEFAULT: [0, 0]}
+if PRESETS_FILE.exists():
+    presets.update(json.loads(PRESETS_FILE.read_text()))
+selected = {"preset": DEFAULT}
+# Minimal UI: one select (go to / delete) and one text field (save under a name).
+DELETE_PREFIX = "🗑 Supprimer « "
+
+
+def delete_option():
+    return f"{DELETE_PREFIX}{selected['preset']} »"
+
+
+def preset_options():
+    extra = [delete_option()] if selected["preset"] != DEFAULT else []
+    return list(presets) + extra
+
+
+def go_to(name):
+    pan, tilt = presets[name]
+    moves.put(("pan", pan))
+    moves.put(("tilt", tilt))
+    selected["preset"] = name
+
+
+def report_presets():
+    # Off the MQTT network thread: the pause below must not block it.
+    threading.Thread(target=_report_presets, daemon=True).start()
+
+
+def _report_presets():
+    # The select's options live in its discovery config, so republish it on every change.
+    client.publish("homeassistant/select/pi3_preset/config", json.dumps({
+        "name": "Position", "unique_id": "pi3_preset", "options": preset_options(),
+        "command_topic": f"{BASE}/preset/set", "state_topic": f"{BASE}/preset/state",
+        "icon": "mdi:map-marker-outline", **DEVICE}), retain=True)
+    time.sleep(0.5)  # let HA apply the new options before the state
+    client.publish(f"{BASE}/preset/state", selected["preset"], retain=True)
+    client.publish(f"{BASE}/preset_name/state", "", retain=True)
+
+
+def save_presets():
+    PRESETS_FILE.write_text(json.dumps(presets, ensure_ascii=False))
+    report_presets()
 
 
 def pulse_for(axis, position):
@@ -92,11 +139,16 @@ def mover():
         shoot_now.set()
 
 
+DEVICE = {"availability_topic": f"{BASE}/status",
+          "device": {"identifiers": ["pi3-pitest"], "name": "Pi 3",
+                     "model": "Raspberry Pi 3 B + Camera Module 3 + Waveshare Pan-Tilt HAT",
+                     "manufacturer": "Raspberry Pi"}}
+# Entities dropped for a minimal UI: an empty retained config removes them from HA.
+RETIRED = ["button/pi3_recentre", "button/pi3_set_default", "button/pi3_preset_save",
+           "button/pi3_preset_delete", "button/pi3_snapshot"]
+
+
 def discovery():
-    device = {"identifiers": ["pi3-pitest"], "name": "Pi 3",
-              "model": "Raspberry Pi 3 B + Camera Module 3 + Waveshare Pan-Tilt HAT",
-              "manufacturer": "Raspberry Pi"}
-    common = {"availability_topic": f"{BASE}/status", "device": device}
     entities = {
         "camera/pi3": {"name": "Caméra", "unique_id": "pi3_camera", "topic": f"{BASE}/camera"},
         "camera/pi3_hd": {"name": "Photo HD", "unique_id": "pi3_camera_hd", "topic": f"{BASE}/camera_hd"},
@@ -108,23 +160,27 @@ def discovery():
         "number/pi3_tilt": {"name": "Tilt (haut +)", "unique_id": "pi3_tilt",
                             "command_topic": f"{BASE}/tilt/set", "state_topic": f"{BASE}/tilt/state",
                             "min": -100, "max": 100, "step": 10, "mode": "slider", "icon": "mdi:pan-vertical"},
-        "button/pi3_recentre": {"name": "Recentrer", "unique_id": "pi3_recentre",
-                                "command_topic": f"{BASE}/recentre", "icon": "mdi:image-filter-center-focus"},
-        "button/pi3_snapshot": {"name": "Photo maintenant", "unique_id": "pi3_snapshot",
-                                "command_topic": f"{BASE}/snapshot", "icon": "mdi:camera"},
+        "text/pi3_preset_name": {"name": "＋ Enregistrer la position sous…", "unique_id": "pi3_preset_name",
+                                 "command_topic": f"{BASE}/preset_name/set",
+                                 "state_topic": f"{BASE}/preset_name/state", "min": 0, "max": 30,
+                                 "icon": "mdi:map-marker-plus-outline"},
         "switch/pi3_privacy": {"name": "Caméra active", "unique_id": "pi3_privacy",
                                "command_topic": f"{BASE}/privacy/set", "state_topic": f"{BASE}/privacy/state",
                                "icon": "mdi:cctv"},
     }
     for path, cfg in entities.items():
-        client.publish(f"homeassistant/{path}/config", json.dumps({**common, **cfg}), retain=True)
+        client.publish(f"homeassistant/{path}/config", json.dumps({**DEVICE, **cfg}), retain=True)
+    for path in RETIRED:
+        client.publish(f"homeassistant/{path}/config", "", retain=True)
 
 
 def on_connect(c, *_):
     c.publish(f"{BASE}/status", "online", retain=True)
     discovery()
-    c.subscribe([(f"{BASE}/{t}", 0) for t in ("pan/set", "tilt/set", "recentre", "snapshot", "snapshot_hd", "privacy/set")])
+    c.subscribe([(f"{BASE}/{t}", 0) for t in ("pan/set", "tilt/set", "snapshot_hd", "privacy/set",
+                                                    "preset/set", "preset_name/set")])
     save_and_report()
+    report_presets()
 
 
 def on_message(c, userdata, msg):
@@ -132,11 +188,18 @@ def on_message(c, userdata, msg):
     try:
         if topic in ("pan/set", "tilt/set"):
             moves.put((topic.split("/")[0], round(float(payload))))
-        elif topic == "recentre":
-            moves.put(("pan", 0))
-            moves.put(("tilt", 0))
-        elif topic == "snapshot":
-            shoot_now.set()
+        elif topic == "preset/set" and payload in presets:
+            go_to(payload)
+            report_presets()
+        elif topic == "preset/set" and payload == delete_option():
+            presets.pop(selected["preset"], None)
+            selected["preset"] = DEFAULT
+            save_presets()
+        elif topic == "preset_name/set" and payload:
+            # Typing a name saves the current position under it (the default can be redefined too).
+            presets[payload[:30]] = [state["pan"], state["tilt"]]
+            selected["preset"] = payload[:30]
+            save_presets()
         elif topic == "snapshot_hd":
             want_hd.set()
             shoot_now.set()
