@@ -9,7 +9,7 @@ Textual specifications of [`01-use-case.md`](../diagrams/voice-assistant/01-use-
   the minimal query an online service needs (e.g. a city for the weather, a track name) may go
   out (ADR-0001).
 - **NFR-2 — Responsiveness**: for a known command (local intent, REQ-2) the spoken answer
-  starts within 3 s of the end of the request; the LLM path's target is open (Q7).
+  starts within 3 s of the end of the request; the LLM path is covered by NFR-5 (ADR-0003).
   Estimates, to be measured on real hardware.
 - **NFR-5 — LLM path**: spoken thinking cue if no answer starts within 2 s; speech starts at
   the first generated sentence; full answer within 15 s (ADR-0003, to tune after benchmark).
@@ -42,7 +42,8 @@ Textual specifications of [`01-use-case.md`](../diagrams/voice-assistant/01-use-
 - 4a. The question cannot be answered locally:
   - 4a1. System queries an online source with the minimal query (NFR-1); resumes at step 5.
   - 4a2. No online answer either: System says it does not know; use case ends.
-- *a. At any time, the member says "stop": System stops speaking; use case ends.
+- *a. At any time, the member says "stop": System stops speaking; use case ends
+  (barge-in, iteration 2: REQ-17).
 
 **Relationships**: includes UC5.
 **Business rules / NFR**: NFR-1, NFR-2.

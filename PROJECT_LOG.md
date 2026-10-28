@@ -307,3 +307,14 @@
   (Pi 5 listens in the living room, Nest output, Zigbee/Wi-Fi lamp as listening light, voice
   pause with auto-resume, 7-day text log, young child 8/10 criterion). Next: technical choices
   (speech-to-text engine, Piper voices, wake word "Yuki" model), then UML.
+
+## 2026-10-28 — Brick 0: publish the repository (issue #1)
+
+- Public repo `benoit-bremaud/confiture` created (owner P1: public during development,
+  private later), project #76, secret scanning and push protection on.
+- Two history scrubs removed personal and network data; real values live in the gitignored
+  `inventory.local.md`. `CLAUDE.md` forbids sensitive data; `.env.example` has placeholders.
+- CI: gitleaks with personal-data rules (MAC, private IPv4, Tailscale), no report artifact.
+- Pre-push review (`docs/architecture/review-local.md`): Must 1 and Should 9 resolved.
+- **Waiver** (owner, MCDA 450/500): pre-merge gate steps 1–3 (tests, coverage, SonarQube)
+  waived until the first PR with executable code; shellcheck runs locally meanwhile.

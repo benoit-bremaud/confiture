@@ -8,8 +8,8 @@ UML-first, proportional: use cases (phase 0) are validated before any realisatio
 ## Scope and goals
 
 A personal voice assistant for the home whose voice processing stays local (ADR-0001), built
-on recycled Raspberry Pis. NFR-1 to NFR-4: [use cases](specs/voice-assistant-use-cases.md);
-REQ-1 to REQ-8 and open questions: [needs](specs/voice-assistant-needs.md).
+on recycled Raspberry Pis. NFR-1 to NFR-5: [use cases](specs/voice-assistant-use-cases.md);
+REQ-1 to REQ-20 and open questions: [needs](specs/voice-assistant-needs.md).
 
 ## Stakeholders
 

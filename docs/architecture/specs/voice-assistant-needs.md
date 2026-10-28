@@ -1,7 +1,7 @@
 # voice-assistant — needs (phase 1 brainstorming, 2026-10-27)
 
 Outcome of the owner brainstorming that precedes phase 1. Feeds the sequence, component,
-deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
+deployment and data-flow diagrams. Use cases and NFR-1 to NFR-5:
 [`voice-assistant-use-cases.md`](voice-assistant-use-cases.md).
 
 ## Context

@@ -10,10 +10,16 @@ Old fruit, turned into something that keeps.
   (weather, radio) only receive minimal queries (ADR-0001).
 - Old Pis get a second life as voice satellites and room sensors.
 
-## Architecture (draft — to be formalised in UML)
+## Architecture
 
-- **Satellite** (Raspberry Pi 3): microphone + speaker, wake-word detection, streams audio to the brain.
-- **Brain** (host to decide: homelab Pi 5, old laptop, or both): speech-to-text, intent handling, text-to-speech, optional local LLM.
+Detail in [`docs/architecture/`](docs/architecture/README.md).
+
+- **Brain** split over two hosts (ADR-0004): the homelab Pi 5 runs the voice pipeline (Home
+  Assistant Assist: wake word, speech-to-text, intents, text-to-speech); an old laptop runs the
+  local LLM with Ollama (ADR-0005).
+- **Listening**: in iteration 1 the Pi 5 itself listens through a USB microphone in the living
+  room (REQ-15); answers play on a Nest Mini used as an output only (REQ-12, REQ-16).
+- **Satellites** (Raspberry Pi 3 and later nodes): extra listening points in other rooms.
 - **Sensors** (Raspberry Pi 1 ×2): room data (temperature, humidity…) the assistant can query.
 
 Tool candidates (versions to be verified before use): Home Assistant Assist, Wyoming protocol,

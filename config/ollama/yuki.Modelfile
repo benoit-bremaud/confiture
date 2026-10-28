@@ -1,14 +1,20 @@
 # Yuki's LLM persona (ADR-0004, ADR-0005, REQ-2, REQ-9).
 # The SYSTEM text is in French on purpose: the model obeys a French-only rule more reliably
 # when the rule itself is written in French (qwen2.5:3b drifted into Chinese without it).
-# Build: docker exec -i ollama ollama create yuki -f - < config/ollama/yuki.Modelfile
+# Build: copy this file into the container, then `ollama create yuki -f <copied file>`
+# (Ollama 0.40 does not read a Modelfile from stdin).
+# Home Assistant keeps its own copy of the SYSTEM text in the agent prompt: update both.
+# The prompt is not a security boundary: a child can try "ignore your rules". Access control
+# stays in the per-satellite policy of ADR-0002.
 
 FROM qwen2.5:3b
 
 # Low temperature: fewer invented facts and fewer language switches.
 PARAMETER temperature 0.4
 PARAMETER top_p 0.9
-# Spoken answers stay short (NFR-5); 160 tokens cap a long answer at about 20 s.
+# Spoken answers stay short (NFR-5). 160 tokens cap the longest answer at about 20 s of
+# speech, but NFR-5 is met by streaming (speech starts at the first sentence); measured
+# generation mean 4.9 s (PROJECT_LOG 2026-10-28). Recheck with text-to-speech in brick 6.
 PARAMETER num_predict 160
 
 SYSTEM """Tu es Yuki, l'assistant vocal d'une famille française : un papa et ses enfants.
