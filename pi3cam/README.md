@@ -1,0 +1,37 @@
+# pi3cam — Pan-Tilt camera agent
+
+Prototype agent that lets Home Assistant look through and aim the Pi 3 camera over MQTT (issue #3).
+
+## What it does
+
+- Publishes a JPEG snapshot (1280×720, rotated 180°) every 10 s and right after each move.
+- Exposes through MQTT Discovery: camera, pan and tilt sliders (−100…100), recentre and
+  snapshot buttons, and a privacy switch (off = no capture, no stale image in HA).
+- Servo safety stays in the agent: calibrated limits, 1000 µs/s ramp, PWM cut after each move.
+  The position is the last commanded one; there is no feedback.
+
+Decision: MCDA option A (one MQTT agent + snapshots, no listening port), 430/500.
+
+## Install on the Pi 3
+
+Prerequisites: Camera Module 3, Waveshare Pan-Tilt HAT, I²C enabled, user in `i2c,gpio,video`,
+a dedicated MQTT user on the hub broker.
+
+```bash
+python3 -m venv ~/pi3cam && ~/pi3cam/bin/pip install paho-mqtt smbus2
+cp pi3cam.py run.sh ~/pi3cam/ && chmod 700 ~/pi3cam/run.sh
+umask 077 && mkdir -p ~/.config/pi3cam
+printf '%s\n' '<broker-ip>' > ~/.config/pi3cam/mqtt-broker
+printf '%s\n' '<mqtt-user>' > ~/.config/pi3cam/mqtt-user
+read -rs PW && printf '%s\n' "$PW" > ~/.config/pi3cam/mqtt-password
+(crontab -l 2>/dev/null; echo '@reboot sleep 30 && $HOME/pi3cam/run.sh') | crontab -
+```
+
+`run.sh` restarts the agent if it exits. Logs: `~/pi3cam/pi3cam.log`.
+
+## Known limits (prototype)
+
+- Started from crontab, not systemd (no sudo when it was set up).
+- Tilt-down limit (2300 µs) is provisional; recalibrate once the Pi is mounted high.
+- The first move after a restart may jump: the real servo position is unknown.
+- The light sensor (TSL25911) is not exposed yet; no UML or tests yet (to do before the PR).
