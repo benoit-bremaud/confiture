@@ -154,3 +154,7 @@
   hostname `nest-mini-sejour`, rule active.
 - Box DHCP reservation added for the Pi 3: `<mac>` → `<pi3-ip>`, hostname
   `pitest`, rule active. The Pi 5 (`<pi5-ip>`) was already reserved as bb-homelab.
+- Box DHCP reservation added for the projector: `<mac>` → `<projector-ip>`,
+  hostname `projector`, rule active (entered by hand, projector offline). The MAC is
+  Android-randomised: if the projector shows up at another IP, set its Wi-Fi privacy to
+  "device MAC" and update the reservation.
