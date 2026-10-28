@@ -17,15 +17,15 @@ import paho.mqtt.client as mqtt
 from smbus2 import SMBus
 
 BASE = "confiture/pi3"
-INTERVAL = 10
+INTERVAL = 2  # light stream; HD only on demand (MCDA option E, 425/500)
 # Local, never committed (mode 600): broker host, MQTT user, MQTT password — one per file.
 CONF = Path.home() / ".config/pi3cam"
 BROKER = (CONF / "mqtt-broker").read_text().strip()
 USER = (CONF / "mqtt-user").read_text().strip()
 PASSWORD = (CONF / "mqtt-password").read_text().strip()
 STATE_FILE = CONF / "state.json"
-CAPTURE = ["rpicam-still", "-n", "-t", "1", "--rotation", "180",
-           "--width", "1280", "--height", "720", "-q", "80", "-o", "-"]
+LIGHT = (640, 360, 70)   # width, height, JPEG quality
+HD = (1280, 720, 85)
 
 # Calibration 2026-10-28 (PROJECT_LOG): pulse widths in µs; position -100..100.
 # Pan +100 = left (camera's point of view); tilt +100 = up. Tilt-down limit provisional.
@@ -41,6 +41,7 @@ PERIOD_US = 20000  # 50 Hz, prescale 121 already set on the chip
 bus = SMBus(1)
 moves = queue.Queue()
 shoot_now = threading.Event()
+want_hd = threading.Event()
 state = {"pan": 0, "tilt": 0, "camera": "ON"}
 if STATE_FILE.exists():
     state.update(json.loads(STATE_FILE.read_text()))
@@ -98,6 +99,9 @@ def discovery():
     common = {"availability_topic": f"{BASE}/status", "device": device}
     entities = {
         "camera/pi3": {"name": "Caméra", "unique_id": "pi3_camera", "topic": f"{BASE}/camera"},
+        "camera/pi3_hd": {"name": "Photo HD", "unique_id": "pi3_camera_hd", "topic": f"{BASE}/camera_hd"},
+        "button/pi3_snapshot_hd": {"name": "Prendre une photo HD", "unique_id": "pi3_snapshot_hd",
+                                   "command_topic": f"{BASE}/snapshot_hd", "icon": "mdi:camera-iris"},
         "number/pi3_pan": {"name": "Pan (gauche +)", "unique_id": "pi3_pan",
                            "command_topic": f"{BASE}/pan/set", "state_topic": f"{BASE}/pan/state",
                            "min": -100, "max": 100, "step": 10, "mode": "slider", "icon": "mdi:pan-horizontal"},
@@ -119,7 +123,7 @@ def discovery():
 def on_connect(c, *_):
     c.publish(f"{BASE}/status", "online", retain=True)
     discovery()
-    c.subscribe([(f"{BASE}/{t}", 0) for t in ("pan/set", "tilt/set", "recentre", "snapshot", "privacy/set")])
+    c.subscribe([(f"{BASE}/{t}", 0) for t in ("pan/set", "tilt/set", "recentre", "snapshot", "snapshot_hd", "privacy/set")])
     save_and_report()
 
 
@@ -132,6 +136,9 @@ def on_message(c, userdata, msg):
             moves.put(("pan", 0))
             moves.put(("tilt", 0))
         elif topic == "snapshot":
+            shoot_now.set()
+        elif topic == "snapshot_hd":
+            want_hd.set()
             shoot_now.set()
         elif topic == "privacy/set" and payload in ("ON", "OFF"):
             state["camera"] = payload
@@ -150,12 +157,24 @@ client.connect_async(BROKER)
 client.loop_start()
 threading.Thread(target=mover, daemon=True).start()
 
+def capture(width, height, quality):
+    cmd = ["rpicam-still", "-n", "-t", "1", "--rotation", "180", "--width", str(width),
+           "--height", str(height), "-q", str(quality), "-o", "-"]
+    shot = subprocess.run(cmd, capture_output=True, timeout=30)
+    return shot.stdout if shot.returncode == 0 else b""
+
+
 while True:
     if state["camera"] == "ON":
-        shot = subprocess.run(CAPTURE, capture_output=True, timeout=30)
-        if shot.returncode == 0 and shot.stdout:
-            client.publish(f"{BASE}/camera", shot.stdout)
+        if want_hd.is_set():
+            want_hd.clear()
+            if image := capture(*HD):
+                client.publish(f"{BASE}/camera_hd", image)
+        if image := capture(*LIGHT):
+            client.publish(f"{BASE}/camera", image)
     else:
-        client.publish(f"{BASE}/camera", b"", retain=False)
+        want_hd.clear()
+        client.publish(f"{BASE}/camera", b"")
+        client.publish(f"{BASE}/camera_hd", b"")
     shoot_now.wait(INTERVAL)
     shoot_now.clear()
