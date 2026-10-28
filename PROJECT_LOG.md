@@ -158,3 +158,5 @@
   hostname `projector`, rule active (entered by hand, projector offline). The MAC is
   Android-randomised: if the projector shows up at another IP, set its Wi-Fi privacy to
   "device MAC" and update the reservation.
+- Box DHCP reservation added for the ESPHome device: `<mac>` → `<esphome-ip>`,
+  hostname `espectre-01`, rule active.
