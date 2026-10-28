@@ -204,3 +204,30 @@
   accepted by the owner after a detailed walk-through of weights and sensitivity. Open check:
   speech-to-text speed on the Pi 5 (assumed in B's responsiveness score, not measured yet).
   Unblocks Ollama ↔ Home Assistant.
+
+## 2026-10-28 — Ollama connected to Home Assistant
+
+- UML first: `docs/architecture/diagrams/voice-assistant/02-sequence-ask-a-question.md`
+  (local intents first, LLM fallback, LLM host down).
+- HA (UI through Tailscale `<pi5-tailscale-ip>:8123`): Ollama integration at
+  `http://<probook-ip>:11434`; conversation agent "Yuki" — model `yuki:latest` (the default
+  `qwen3:4b-instruct` was not picked: HA would have pulled it), French instructions copied from
+  `config/ollama/yuki.Modelfile` (HA sends its own system prompt, so the Modelfile SYSTEM is
+  not enough), "Assist" control **off** (`llm_hass_api: []`), think off, keep alive -1,
+  context 8192, history 20. Assist pipeline "Yuki" — French, agent `conversation.yuki`,
+  "Prefer handling commands locally" on, no STT/TTS yet; "Home Assistant" (English) stays
+  the preferred pipeline.
+- Text tests through `assist_pipeline/run`:
+  - "quelle heure est-il ?" → local, 0.4 s.
+  - "pourquoi le ciel est-il bleu ?" → LLM, 26.7 s cold, answer wrong (nitrogen/"ethylene").
+  - spider legs 3.2 s (right), short joke 4.6 s — warm.
+  - Ollama stopped: local intent still answers (0.01 s); LLM path fails fast (0.06 s) with
+    HA's generic `intent-failed`. Ollama restarted, healthy.
+  - "pourquoi la mer est salée ?" → 23 s right after restart, answer partly wrong.
+- Gotchas: NordPass's autofill overlay on HA text fields blocks every Chrome-extension action
+  until closed; the HA code editor auto-indents typed lines (harmless leading spaces).
+- Follow-ups: friendly "I can't think right now" answer when the LLM host is down (ADR-0004);
+  cold start ≈ 25 s breaks NFR-5 — keep the model loaded (`OLLAMA_KEEP_ALIVE` on the container
+  is 30m; HA asks -1); factual quality stays the 3B limit (GPU host). Voice tests next: Nest
+  Mini as speaker, the webcam as microphone, Pi 3 camera for visual checks (owner suggestion),
+  after Piper and a speech-to-text engine are in place.
