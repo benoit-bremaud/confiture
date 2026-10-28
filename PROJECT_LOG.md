@@ -160,3 +160,7 @@
   "device MAC" and update the reservation.
 - Box DHCP reservation added for the ESPHome device: `<mac>` → `<esphome-ip>`,
   hostname `espectre-01`, rule active.
+- Box DHCP reservation added for the Zigbee coordinator: `<mac>` → `<zigbee-coordinator-ip>`,
+  hostname `zigbee-coordinator`, rule active. MAC read with `ip neigh` (absent from the box's
+  client list); it is locally administered, so re-check if the coordinator changes IP.
+  7 of 10 reservations used.
