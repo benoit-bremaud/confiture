@@ -12,3 +12,4 @@ user-data
 
 # Local-only notes with personal or network data
 *.local.md
+.scannerwork/

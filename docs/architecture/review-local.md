@@ -15,13 +15,13 @@ Pre-push review of the first push of the repository (public), run in `--push` mo
 |---|---|
 | 1 Tests | ⚠️ not applicable: no code, no test suite yet |
 | 2 Coverage | ⚠️ not applicable (tests, docs counter) |
-| 3 SonarQube | ⚠️ not run: no SonarQube project for this repository yet |
+| 3 SonarQube | ✅ PASSED (local `localhost:9000`, project `confiture`): 0 bugs, 0 vulnerabilities, 0 code smells, 0 hotspots |
 | 4 Secrets | ✅ gitleaks clean on full history (default + personal-data rules) · `.env.example` only · ✅ diff read after the second history scrub: nothing sensitive (0 matches left) |
 | 5 QA pass | skipped (`--push` mode, no running product in the diff) |
 
-- Gate: **GREEN for push**. Steps 1–3: owner waiver 2026-10-28 (MCDA 450/500), valid until
-  the first PR that adds executable code; from then on tests, coverage and SonarQube are
-  mandatory. Meanwhile `shellcheck scripts/*.sh` runs locally: one SC2016 info at
+- Gate: **GREEN for push**. Steps 1–2: owner waiver 2026-10-28 (MCDA 450/500), valid until
+  the first PR that adds executable code; from then on tests and coverage are
+  mandatory. Step 3 runs on every local CI run (owner rule 2026-10-28, agents-skills#159). Meanwhile `shellcheck scripts/*.sh` runs locally: one SC2016 info at
   `scripts/configure-sd.sh:46`, a false positive (the single quotes sit inside double quotes).
 
 ## Resolution (2026-10-28)

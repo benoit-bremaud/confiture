@@ -316,5 +316,7 @@
   `inventory.local.md`. `CLAUDE.md` forbids sensitive data; `.env.example` has placeholders.
 - CI: gitleaks with personal-data rules (MAC, private IPv4, Tailscale), no report artifact.
 - Pre-push review (`docs/architecture/review-local.md`): Must 1 and Should 9 resolved.
-- **Waiver** (owner, MCDA 450/500): pre-merge gate steps 1–3 (tests, coverage, SonarQube)
-  waived until the first PR with executable code; shellcheck runs locally meanwhile.
+- **Waiver** (owner, MCDA 450/500): pre-merge gate steps 1–2 (tests, coverage) waived until
+  the first PR with executable code; shellcheck and actionlint run locally meanwhile.
+- SonarQube on every local CI run (owner rule, all projects; global rule tracked in
+  agents-skills#159): `sonar-project.properties` added, local scan PASSED, 0 issues.
