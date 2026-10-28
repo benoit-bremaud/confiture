@@ -148,3 +148,5 @@
   French** (English question included); "I don't know" works on an obscure question; but
   answers still run long (5 sentences) and contain factual errors (sky, salty sea) — expected
   from a 3B model, revisit with the GPU host. Times 2–15 s warm, 19 s on first load.
+- Box DHCP reservation added (Réseau > LAN > LAN DHCP): ProBook `<mac>` →
+  `<probook-ip>`, hostname `hp-probook`, rule active; listed next to bb-homelab (<pi5-ip>).
