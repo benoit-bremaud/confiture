@@ -87,6 +87,12 @@ Owner answers, each settled by MCDA (weights /100, totals /500). Facts carry no 
   ≤ 15 s. LLM factual accuracy is measured separately. Measured in 4 steps: Claude with
   recorded audio played through the Nest, the owner at 2 m with the TV off, the
   young child, then with the TV on.
+- **Test voices** (430; synthetic only 380, live child every run 335): a synthetic child
+  voice (Piper French voice pitched up 4 to 6 semitones, slightly faster, played through the
+  Nest) to debug the chain; then 15 to 20 phrases recorded once by the young child, with the child's
+  and the owner's consent, for the success-criterion measurement. Recordings stay at home,
+  never in the repository, and are deleted after the tests. A synthetic voice proves the
+  chain works, not that a young child is understood.
 
 ## Open questions (to settle with MCDA, then ADR)
 
