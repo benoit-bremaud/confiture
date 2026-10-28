@@ -106,7 +106,7 @@
     will live in Home Assistant). Equaliser left flat. Auto firmware updates kept.
   - Owner choices: Wi-Fi password from the saved Google entry; Google Assistant terms accepted;
     WAA auto-delete at 3 months approved but **not applied yet**.
-  - To do: owner flips the physical mic switch (orange LED); check the Google Cast
+  - Mic switched off by the owner (orange LED). To do: check the Google Cast
     integration in Home Assistant.
 - REQ-13 (remote visual check after ESPectre alerts, NoIR at night) and Q8 (remote access,
   Tailscale first at 460) added to the needs document.
