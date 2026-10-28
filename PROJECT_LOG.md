@@ -231,3 +231,18 @@
   is 30m; HA asks -1); factual quality stays the 3B limit (GPU host). Voice tests next: Nest
   Mini as speaker, the webcam as microphone, Pi 3 camera for visual checks (owner suggestion),
   after Piper and a speech-to-text engine are in place.
+
+## 2026-10-28 — Ollama upgrade and model benchmark (in progress)
+
+- Ollama 0.12.6 (released 2025-10-15, a year old: my pinning checked "at least two weeks old"
+  but not "not too old") could not pull `gemma3:4b` (republished) nor `ministral-3:3b`
+  (supported since 0.13.1). Owner chose 0.40.4 (MCDA 475 vs 0.40.12 380 vs stay 155).
+  Upgraded: `ollama/ollama:0.40.4@sha256:926d40fd…b1a6`, same flags, same volume; Uid 1000,
+  CapEff 0, NoNewPrivs 1, healthy; HA → yuki answered (14.5 s cold). Old container kept stopped
+  as `ollama-0.12.6` for rollback.
+- Pulled: `qwen3:4b-instruct-2507-q4_K_M`, `gemma3:4b`. `ministral-3:3b` was downloading when
+  the ProBook dropped off the network (no ping, no SSH, absent from Tailscale); owner away from
+  home. Cause unknown (battery, sleep, Wi-Fi) — check `journalctl -b -1` when it is back.
+  Meanwhile Yuki's free questions fail; local intents still work.
+- Benchmark script ready (scratchpad `bench.py`): 7 French/English questions, Yuki system
+  prompt, warm timings; run on qwen2.5:3b, qwen3:4b-instruct, gemma3:4b, ministral-3:3b.
