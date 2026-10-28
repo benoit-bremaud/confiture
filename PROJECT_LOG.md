@@ -297,3 +297,8 @@
   77 million French, a non-joke cut mid-sentence, invents "Maman". Conclusion: a 7B is 3.5
   times slower for a small quality gain; it does not justify buying a GPU host just to run
   a 7B. Deleted `yuki7b` and `qwen2.5:7b`; `yuki` reloaded and answering through HA.
+- HA config in git: not now (owner G3, MCDA 410 vs Yuki-only files 385 vs full copy 275).
+  `configuration.yaml` is a bb-homelab seed (its ADRs 0003/0005/0007), so bb-homelab stays
+  its source of truth; HA makes a full backup nightly at 03:15 (3 kept, 20-36 MB) but on the
+  Pi 5's own disk. **Follow-up for bb-homelab (not this repo): copy HA backups off the Pi 5.**
+  Next: brainstorm the voice step.
