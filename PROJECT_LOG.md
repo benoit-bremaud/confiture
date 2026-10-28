@@ -302,3 +302,8 @@
   its source of truth; HA makes a full backup nightly at 03:15 (3 kept, 20-36 MB) but on the
   Pi 5's own disk. **Follow-up for bb-homelab (not this repo): copy HA backups off the Pi 5.**
   Next: brainstorm the voice step.
+- Voice-step brainstorming done with the owner, every answer by MCDA: REQ-14 to REQ-20 and
+  the iteration 1 success criterion recorded in `docs/architecture/specs/voice-assistant-needs.md`
+  (Pi 5 listens in the living room, Nest output, Zigbee/Wi-Fi lamp as listening light, voice
+  pause with auto-resume, 7-day text log, young child 8/10 criterion). Next: technical choices
+  (speech-to-text engine, Piper voices, wake word "Yuki" model), then UML.

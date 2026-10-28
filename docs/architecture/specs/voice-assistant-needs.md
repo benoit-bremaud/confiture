@@ -54,6 +54,40 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
   with the Pan-Tilt HAT on the Pi 3). Night vision needs a NoIR camera with infrared lighting.
   Depends on Q8.
 
+## Voice step — needs (brainstorming 2026-10-28)
+
+Owner answers, each settled by MCDA (weights /100, totals /500). Facts carry no score.
+
+- **Facts**: the test microphone is the webcam's, plugged into the Pi 5; the Pi 5 sits in the
+  living room, in plain view; children: a young child (about 7) and an adult child (tune for the young child's voice); in
+  stock: Zigbee and Wi-Fi bulbs, Zigbee buttons, a better USB microphone.
+- **REQ-14 — First room**: the living room (410; child's bedroom 310, kitchen 300).
+- **REQ-15 — Listening device**: the Pi 5 itself listens, through a USB microphone on an
+  extension cable placed in the middle of the room; the Pi 3 stays free for the camera
+  (REQ-13) or a second satellite (410; Pi 3 camera + another box 385, Pi 3 satellite 370,
+  Pi 3 both 315). Tests use the webcam microphone, then the better USB microphone.
+- **REQ-16 — Answer output**: the Nest Mini only in iteration 1 (440; per room 365, speaker
+  on the satellite 330). Being away from the microphone also reduces echo.
+- **REQ-17 — Barge-in** ("Yuki, stop" while it speaks): iteration 2 (420; never 340,
+  iteration 1 285).
+- **REQ-18 — Listening light** (realises REQ-5): a connected Zigbee or Wi-Fi lamp from stock,
+  driven by Home Assistant (445 once free; GPIO LED on the Pi 5 405, Pi 3 LED over MQTT 360).
+- **REQ-19 — Voice pause**: "Yuki, ne m'écoute plus pendant une heure / jusqu'à demain";
+  the lamp shows red; listening resumes automatically at the end, or earlier from the phone;
+  the night schedule of ADR-0002 still applies (420; no pause 410, voice pause + button
+  resume 360, Zigbee button only 310). A real mute cannot be lifted by voice, since that
+  would need the microphone listening.
+- **REQ-20 — Question log**: text only, kept locally 7 days, readable by the owner only, the
+  family informed; never audio (360; tests only 340, text + audio 310, none 250). The
+  older child is an adult: until speaker recognition (REQ-4), their questions are logged too —
+  hence "family informed".
+- **Iteration 1 success criterion** (465; adult only 420, everything at once 310): in the
+  living room, the young child gets 8 successes out of 10 — wake, understanding, a coherent
+  answer on the Nest — for "quelle heure est-il ?" in ≤ 3 s and for a free question in
+  ≤ 15 s. LLM factual accuracy is measured separately. Measured in 4 steps: Claude with
+  recorded audio played through the Nest, the owner at 2 m with the TV off, the
+  young child, then with the TV on.
+
 ## Open questions (to settle with MCDA, then ADR)
 
 - ~~**Q1 — Child restrictions before speaker recognition**~~ — resolved by ADR-0002
