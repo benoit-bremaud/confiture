@@ -168,3 +168,20 @@
   hostname `owner-phone`, rule active (MAC read with `ip neigh`). 8 of 10 reservations used.
 - Box DHCP reservation added for the work PC: `<mac>` → `<work-pc-ip>`,
   hostname `<work-pc-hostname>`, rule active. 9 of 10 reservations used.
+
+## 2026-10-28 — Nest Mini in Home Assistant
+
+- The Google Cast integration was already set up on the Pi 5 (HA 2026.6.2, host network) and
+  had found the new Nest Mini (UUID `16acebbd…`, matches `eureka_info`). Cast link works:
+  volume read at 0.6.
+- Audible test (owner choice C, local sound, MCDA 440 vs Piper 410 vs Google Translate TTS 260):
+  `connection_test.mp3` served from the work PC and cast with pychromecast at volume 0.3, then
+  restored to 0.6. Owner heard it. HA logged a "Failed to cast media" for that URL afterwards
+  (temporary server stopped); harmless.
+- Owner choices applied with HA stopped (registry backups `*.bak-2026-10-28` in `.storage`):
+  stale `media_player.sejour` (old device `3cb6ec83…`) and its device removed;
+  `media_player.nestmini1401` renamed `media_player.nest_mini_sejour`. HA back up, 45 entities.
+- Seen in passing: HA lacks `NET_ADMIN`/`NET_RAW` for Bluetooth recovery (bb-homelab compose,
+  read only here). Google Translate TTS (cloud) stays installed but unused (NFR-1).
+- Next: Piper (local French TTS) with the voice pipeline; port 8123 does not answer from the LAN
+  (HA reached through SSH only).
