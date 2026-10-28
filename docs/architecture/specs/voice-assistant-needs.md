@@ -44,6 +44,11 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 - **REQ-10 — Voices**: one female and one male voice to choose from (the children decide);
   occasionally a fun accent to make the household laugh (available accents to verify).
 - **REQ-11 — Wake word chosen by the children**: shortlist by MCDA, final vote by the children.
+- **REQ-12 — Announcement speakers**: the assistant can play its answers and announcements
+  (alerts, timers) on a Google Cast speaker through Home Assistant. First device: a Google
+  Nest Mini (2nd gen), microphone switched off; it is an output only, never a satellite,
+  because its firmware is locked to Google Assistant (MCDA 2026-10-28: Cast output 420/500,
+  Google Assistant alongside 165, unused 350).
 
 ## Open questions (to settle with MCDA, then ADR)
 
