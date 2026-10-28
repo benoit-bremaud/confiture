@@ -191,3 +191,12 @@
   21:00, HA start and the Nest Mini coming back online. `check_config` clean, HA restarted,
   volume read 0.6 → 0.5 right after start (08:xx). Not yet tracked in a repo (HA config lives
   in `/mnt/appdata/homeassistant`).
+- DHCP: reservation for a family laptop not done — not on the network (full sweep .2–.254, absent
+  from `ip neigh`); owner dropped it for now. When it is done: read its Wi-Fi MAC and set
+  "Private Wi-Fi address" to Fixed for the home network. Last free slot: 9 of 10 used.
+- State of the follow-ups: done today — ProBook fixed lease, Google Cast check in HA, Nest
+  Mini volume schedule. Open — Ollama ↔ HA (A, waits on the owner validating ADR-0004/0005
+  weights); compose file + Trivy scan for Ollama (B); Piper local TTS; HA config under version
+  control; WAA auto-delete 3 months; `configure-sd.sh` (power save off, `i2c,gpio`); Pi 3
+  Wi-Fi drops; projector teardown and dev options off; remove `~/ollama-install.log` on the
+  ProBook.
