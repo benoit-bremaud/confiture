@@ -143,3 +143,8 @@
   mid-sentence → the system prompt must force French ("Réponds uniquement en français").
 - Follow-ups: fixed DHCP lease for .167; compose file for this container in the repo; Trivy scan
   of the image; system prompt; connect Home Assistant; `~/ollama-install.log` left on the ProBook.
+- Yuki persona: `config/ollama/yuki.Modelfile` (French-only SYSTEM rule, temperature 0.4,
+  num_predict 160) built as model `yuki` on the ProBook. 5 test questions: **all answers in
+  French** (English question included); "I don't know" works on an obscure question; but
+  answers still run long (5 sentences) and contain factual errors (sky, salty sea) — expected
+  from a 3B model, revisit with the GPU host. Times 2–15 s warm, 19 s on first load.
