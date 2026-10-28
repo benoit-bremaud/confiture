@@ -128,5 +128,6 @@
   service with a fixed IP lease.
 - ProBook (`hp-probook`, user `<user>`, SSH key already accepted): sleep, suspend, hibernate and
   hybrid-sleep targets masked; `/etc/systemd/logind.conf.d/no-lid-sleep.conf` ignores the lid
-  (applies after reboot, lid left open tonight). Masked by mistake on the work PC first, then
-  unmasked there.
+  (logind restarted at 02:40 to apply it: `HandleLidSwitch` and `HandleLidSwitchExternalPower`
+  read `ignore`). Verified: lid closed at 02:40:59, SSH still answers, no reboot, on mains power.
+  Masked by mistake on the work PC first, then unmasked there.
