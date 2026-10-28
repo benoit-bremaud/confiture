@@ -282,3 +282,18 @@
   19.5 s; still about 5 of 20 wrong (egg "5-6 min in a pan", "merci" again, horse fastest,
   numbered list on "peur du noir"). Prompt rules do not fix the 3B model's knowledge.
   HA sends its own copy of the instructions: the new rules are not in HA yet.
+- Cleanup (owner D1 440, E1 440): deleted `ministral-3:3b`, `gemma3:4b`,
+  `qwen3:4b-instruct-2507-q4_K_M`, container `ollama-0.12.6` and image `ollama/ollama:0.12.6`
+  (about 12 GB). Left: `yuki`, `qwen2.5:3b`, Ollama 0.40.4.
+- N1 (owner): HA agent "Yuki" instructions replaced by the Modelfile SYSTEM text through the
+  subentry reconfigure flow (other options unchanged: `yuki:latest`, no HA API, ctx 8192,
+  history 20, keep alive -1, think off). Check: "merci en espagnol" still wrong (13.6 s).
+  Gotcha: "combien de temps faut-il pour cuire un œuf dur ?" is caught by HA's built-in
+  timer intent ("Il n'y a aucun minuteur", 0.2 s) and never reaches the LLM.
+- N2 as a reference only (owner): temporary `yuki7b` (same Modelfile, `FROM qwen2.5:7b`), same
+  20 questions. Cold start 40.9 s (load 14.4 s); mean 17.5 s, median 16.7 s, max 44.9 s.
+  Better: egg (9-12 min, boiling water), "gracias", Napoléon. Still about 5 of 20 wrong or
+  unusable: "trente-six cinquante-six jours", hesitates on the Mona Lisa, pigeon fastest,
+  77 million French, a non-joke cut mid-sentence, invents "Maman". Conclusion: a 7B is 3.5
+  times slower for a small quality gain; it does not justify buying a GPU host just to run
+  a 7B. Deleted `yuki7b` and `qwen2.5:7b`; `yuki` reloaded and answering through HA.
