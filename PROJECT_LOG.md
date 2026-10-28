@@ -166,3 +166,5 @@
   7 of 10 reservations used.
 - Box DHCP reservation added for the owner's phone: `<mac>` → `<phone-ip>`,
   hostname `owner-phone`, rule active (MAC read with `ip neigh`). 8 of 10 reservations used.
+- Box DHCP reservation added for the work PC: `<mac>` → `<work-pc-ip>`,
+  hostname `<work-pc-hostname>`, rule active. 9 of 10 reservations used.
