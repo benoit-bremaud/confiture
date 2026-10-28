@@ -126,3 +126,7 @@
   needs document. Owner to validate the weights.
 - Next: owner runs `ssh-copy-id` to the ProBook (key refused), then install Ollama as a LAN
   service with a fixed IP lease.
+- ProBook (`hp-probook`, user `<user>`, SSH key already accepted): sleep, suspend, hibernate and
+  hybrid-sleep targets masked; `/etc/systemd/logind.conf.d/no-lid-sleep.conf` ignores the lid
+  (applies after reboot, lid left open tonight). Masked by mistake on the work PC first, then
+  unmasked there.
