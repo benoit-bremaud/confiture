@@ -1,0 +1,31 @@
+# Trivy config scan of the compose files we deploy (docker-hardening). No image is built
+# here: Piper is a third-party image pinned by digest, bumped by Dependabot.
+name: docker-security
+
+on:
+  pull_request:
+    paths:
+      - "deploy/**"
+      - ".github/workflows/docker-security.yml"
+  push:
+    branches: [main]
+    paths:
+      - "deploy/**"
+      - ".github/workflows/docker-security.yml"
+  schedule:
+    - cron: "0 5 * * 1" # weekly: new checks land against unchanged files
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trivy-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Trivy config (blocking on HIGH and CRITICAL)
+        run: >-
+          docker run --rm -v "$PWD":/repo:ro -w /repo
+          aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
+          config --severity HIGH,CRITICAL --exit-code 1 deploy

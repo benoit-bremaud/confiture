@@ -10,6 +10,8 @@ services:
     restart: unless-stopped
     # Non-root; the data folder must belong to this uid (see README.md).
     user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     command:
       - --voice
       - ${PIPER_VOICE:-fr_FR-siwis-medium}

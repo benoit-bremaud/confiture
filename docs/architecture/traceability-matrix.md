@@ -20,9 +20,9 @@
 | NFR-5 | LLM path latency | ADR-0003, ADR-0004 | — | — | — | planned |
 | REQ-4 | Speaker recognition | — | — | — | — | iteration 2 |
 | REQ-10 | Voices | — | — | — | — | planned |
-| REQ-12 | Announcement speakers | — | ADR-0006, 02-sequence | Piper (Pi 5), `yuki_say` | — | planned |
+| REQ-12 | Announcement speakers | — | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md) | Piper (Pi 5), `yuki_say` | manual, ADR-0006 measurements | iteration 1 |
 | REQ-13 | Remote visual check | Q8 | — | — | — | planned |
-| REQ-16 | Answer output (Nest Mini) | REQ-12 | ADR-0006, 02-sequence, 03-deployment | Piper (Pi 5), `yuki_say`, Nest Mini | — | planned |
+| REQ-16 | Answer output (Nest Mini) | REQ-12 | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md), [03-deployment](diagrams/voice-assistant/03-deployment.md) | Piper (Pi 5), `yuki_say`, Nest Mini | manual, ADR-0006 measurements | iteration 1 |
 | REQ-17 | Barge-in | UC1 *a | — | — | — | iteration 2 |
 | REQ-20 | Question log | — | — | — | — | planned |
 

@@ -35,8 +35,10 @@ How the Nest fetches the audio (UFW drops 8123 from the LAN):
 | Option | Total |
 |---|---|
 | **A — UFW allows 8123 from the Nest only; `internal_url` is the Pi LAN URL** | **435** |
-| C — Open 8123 to the whole LAN | 330 |
 | B — Serve Home Assistant through Caddy in HTTPS on the LAN (the Nest rejects the internal CA) | 265 |
+| C — Open 8123 to the whole LAN | 330 |
+
+Per-criterion scores were given in the owner session of 2026-10-28; only the totals are kept here.
 
 Sensitivity: the firewall choice stays A when security drops from 35 to 20.
 
@@ -62,6 +64,8 @@ on the box.
   download, so the voice is chosen on purpose in `yuki_say`.
 - Every other client still reaches Home Assistant over the tailnet; a companion app set to use
   the LAN URL at home would now hit the firewall.
+- Residual risk, accepted: the Nest fetches over plain HTTP, and an allow-list by IP can be
+  spoofed by a device on the LAN; Home Assistant authentication stays the control behind it.
 - Ollama must be up: the ProBook now starts Docker at boot (it was socket-activated only).
 - Revisit when the Pi 5 satellite exists: the pipeline will then speak directly and `yuki_say`
   can go.
