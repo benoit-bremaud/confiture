@@ -87,3 +87,42 @@
   images on the homelab SD; check `docker info` root dir first.
 - Future brain host (owner): a more powerful machine later. MCDA: PC with a ≥ 8 GB NVIDIA GPU 380,
   mini-PC without GPU 345, NAS 290 (NAS = storage, not inference). To fold into the Q2 ADR.
+
+## 2026-10-28 (night) — Pi 3 Wi-Fi power save, Nest Mini, projector, brain ADRs
+
+- Pi 3: Wi-Fi power save was on (`802-11-wireless.powersave: 0 (default)`). Disabled with
+  `/etc/NetworkManager/conf.d/wifi-powersave-off.conf` (`wifi.powersave = 2`), NetworkManager
+  restarted, `wlan0` reconnected. `iw` not installed, so driver state unverified; watch whether
+  the 30–60 s drops stop. To add to `scripts/configure-sd.sh` (with groups `i2c,gpio`).
+- Google Nest Mini (2nd gen) → REQ-12 announcement speaker (MCDA: Cast output 420, Google
+  Assistant alongside 165, unused 350). Firmware locked to Google, so output only, never a
+  satellite. Set up from the owner's phone over adb (Google Home app):
+  - Old offline "Séjour" device removed; new device "Nest Mini Sejour" (no accent: adb
+    `input text` cannot type it), room Séjour, `<nest-mini-ip>`, MAC `<mac>`.
+  - Off: usage stats, ultrasound sensing, cast control from other devices, personal results,
+    music services, marketing e-mails. Voice Match never offered (screen would not open).
+  - Child filters for everyone: videos blocked, non-explicit music, news on, non-explicit
+    podcasts, calls blocked. Downtime skipped (could block night ESPectre alerts; quiet hours
+    will live in Home Assistant). Equaliser left flat. Auto firmware updates kept.
+  - Owner choices: Wi-Fi password from the saved Google entry; Google Assistant terms accepted;
+    WAA auto-delete at 3 months approved but **not applied yet**.
+  - To do: owner flips the physical mic switch (orange LED); check the Google Cast
+    integration in Home Assistant.
+- REQ-13 (remote visual check after ESPectre alerts, NoIR at night) and Q8 (remote access,
+  Tailscale first at 460) added to the needs document.
+- LAN map (ping sweep): 10 hosts found; addresses kept in `inventory.local.md` (gitignored).
+- Projector ("smart-projecteur", Android 13, randomised MAC
+  `<mac>`, `<projector-ip>`, confirmed by power-cycling). No Android TV Remote (6466/6467),
+  no Cast. Developer options, USB debugging, wireless debugging, "Internet Adb" and "Android
+  bug collector" enabled by the owner; pairing failed and a full TCP scan (1–65535) after a
+  reboot found **no open port**: "Internet Adb" does nothing. Only USB-A ports (host), so no
+  USB debugging; never use an A-to-A cable. Menu read with the Pi 3 camera (manual focus
+  `--lens-position 0.3` works at ~3 m). Next: owner opens it to look for UART/USB service
+  pads; otherwise ESPHome IR blaster (MCDA 450 vs smart plug 295 vs nothing 270). Disable the
+  unused developer options meanwhile.
+- ADR-0004 (proposed): voice pipeline on the Pi 5, LLM (`qwen2.5:3b`) on the laptop — 385 vs
+  Pi 5 alone 315 vs laptop alone 295. ADR-0005 (proposed): local LLM only — 395 vs hybrid 380
+  vs cloud 280; fragile: flips to hybrid if quality outweighs privacy. Q2 and Q6 closed in the
+  needs document. Owner to validate the weights.
+- Next: owner runs `ssh-copy-id` to the ProBook (key refused), then install Ollama as a LAN
+  service with a fixed IP lease.
