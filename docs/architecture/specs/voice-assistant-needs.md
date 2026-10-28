@@ -49,6 +49,10 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
   Nest Mini (2nd gen), microphone switched off; it is an output only, never a satellite,
   because its firmware is locked to Google Assistant (MCDA 2026-10-28: Cast output 420/500,
   Google Assistant alongside 165, unused 350).
+- **REQ-13 — Remote visual check**: when an ESPectre sensor detects presence, the owner gets
+  an alert and can look through a camera from anywhere to confirm or dismiss it (pan and tilt
+  with the Pan-Tilt HAT on the Pi 3). Night vision needs a NoIR camera with infrared lighting.
+  Depends on Q8.
 
 ## Open questions (to settle with MCDA, then ADR)
 
@@ -72,3 +76,6 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
   explicit exception for it. Strongly coupled with Q2.
 - ~~**Q7 — LLM-path latency**~~ — resolved by ADR-0003 (thinking cue, streamed speech,
   ≤ 15 s; NFR-5).
+- **Q8 — Remote access** (REQ-13, and working on the nodes from outside home): Tailscale or
+  Cloudflare Tunnel. First MCDA favours Tailscale (460/500): no open port, end-to-end
+  encrypted, covers SSH and the cameras. To confirm with an ADR.
