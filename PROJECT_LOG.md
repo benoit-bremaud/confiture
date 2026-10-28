@@ -164,3 +164,5 @@
   hostname `zigbee-coordinator`, rule active. MAC read with `ip neigh` (absent from the box's
   client list); it is locally administered, so re-check if the coordinator changes IP.
   7 of 10 reservations used.
+- Box DHCP reservation added for the owner's phone: `<mac>` → `<phone-ip>`,
+  hostname `owner-phone`, rule active (MAC read with `ip neigh`). 8 of 10 reservations used.
