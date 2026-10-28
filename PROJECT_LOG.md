@@ -131,3 +131,15 @@
   (logind restarted at 02:40 to apply it: `HandleLidSwitch` and `HandleLidSwitchExternalPower`
   read `ignore`). Verified: lid closed at 02:40:59, SSH still answers, no reboot, on mains power.
   Masked by mistake on the work PC first, then unmasked there.
+- Ollama installed on the ProBook overnight (ADR-0004 prep, Docker without sudo, skill
+  `docker-hardening` applied proportionally to this third-party image):
+  `ollama/ollama:0.12.6@sha256:a61a8fd395db…`, `--restart unless-stopped`, `--user 1000:1000`
+  (named volume `ollama-models` chowned to 1000, `HOME=/data`, `OLLAMA_MODELS=/data/models`),
+  `--cap-drop ALL`, `no-new-privileges`, HEALTHCHECK `ollama list` → `healthy`; verified Uid
+  1000, `CapEff 0`, `NoNewPrivs 1`. Port 11434 published on all interfaces (home LAN behind the
+  box). `qwen2.5:3b` pulled (1.9 GB). First unhardened container removed. Gotcha again:
+  `pkill -f` over SSH killed my own shell (pattern in its command line) → kill by PID.
+- Test from the work PC: 11.7 s incl. cold load, 8.6 tok/s, but the answer **switched to Chinese**
+  mid-sentence → the system prompt must force French ("Réponds uniquement en français").
+- Follow-ups: fixed DHCP lease for .167; compose file for this container in the repo; Trivy scan
+  of the image; system prompt; connect Home Assistant; `~/ollama-install.log` left on the ProBook.
