@@ -47,3 +47,43 @@
   Zigbee coordinator (<zigbee-coordinator-ip>:8888) was unplugged; replugged, z2m started.
 - LLM benchmark on Pi 5 started (temporary `confiture-bench` Ollama container, models on the
   SATA disk; qwen2.5 1.5b/3b, llama3.2 3b). First attempt failed: IPv6 network unreachable.
+
+## 2026-10-28 — 64 GB card, Pan-Tilt calibration, LLM benchmarks
+
+- 16 GB card dead (not detected by two readers). 64 GB card: `f3write`/`f3read` stopped at the
+  owner's request; flashed directly, Pi 3 boots, survives reboots, 0 ext4/mmc errors.
+- Reintroduced one change at a time: I²C enabled → reboot OK; HAT mounted → boot OK. HAT is a
+  Waveshare Pan-Tilt HAT: PCA9685 at 0x40 (+0x70 all-call), TSL25911 light sensor at 0x28/0x29.
+  `<user>` added to `i2c,gpio` groups (todo: add them to `scripts/configure-sd.sh`).
+- Servo calibration (pulse width; directions from the camera's point of view; slow ramp
+  ~100 µs/s; signal cut after each move). Redo calibration later, Pi placed high:
+
+  | Axis | PCA9685 channel | Limit A | Centre | Limit B |
+  |---|---|---|---|---|
+  | Pan | 1 | right 500 µs | 1625 µs | left 2750 µs |
+  | Tilt | 0 | up 500 µs | 1650 µs | down 2300 µs (provisional) |
+
+  Tilt down: servo forced at 2750 and 2800 µs, and image barely changed past ~2300 µs with no
+  obstacle → provisional limit 2300 µs.
+- Method: no servo feedback, so position is checked by photo diff between steps (image mean
+  difference ~30 while moving, ~7 when stalled).
+- Pi 3 Wi-Fi drops for 30–60 s several times (Pi never rebooted, `throttled=0x0`): likely
+  brcmfmac power saving → disable Wi-Fi power save before the satellite goes live.
+- LLM benchmark (Ollama 0.12.6 in a temporary container, 3 French prompts, 120 tokens max;
+  everything removed afterwards):
+
+  | Host / model | TTFT | tok/s | short answer | 120 tokens |
+  |---|---|---|---|---|
+  | Pi 5 `qwen2.5:3b` | 3.0 s | 5.3 | 16 s | 26 s |
+  | Pi 5 `llama3.2:3b` | 3.2 s | 4.8 | 17 s | 28 s |
+  | HP ProBook 450 G5 (i5-8250U, 8 GB) `qwen2.5:3b` | 1.4 s | 8.0 | 8.7 s | 16.7 s |
+  | ProBook `llama3.2:3b` | 1.5 s | 7.8 | 9.8 s | 17.3 s |
+  | ProBook `qwen2.5:7b` | 3.2 s | 3.6 | 13.5 s | 37 s |
+
+  Only the ProBook + 3B model meets NFR-5 for short answers. All models make factual errors;
+  llama3.2 refused a recipe ("mineurs") → guard with a system prompt, short answers, "I don't know".
+- Incident: the Ollama image filled the Pi 5 SD card to 97 % (861 MB free) — models were on the
+  SATA disk but Docker's root is on the SD. Cleaned up (back to 71 %). Lesson: never pull large
+  images on the homelab SD; check `docker info` root dir first.
+- Future brain host (owner): a more powerful machine later. MCDA: PC with a ≥ 8 GB NVIDIA GPU 380,
+  mini-PC without GPU 345, NAS 290 (NAS = storage, not inference). To fold into the Q2 ADR.
