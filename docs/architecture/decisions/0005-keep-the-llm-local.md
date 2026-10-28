@@ -1,6 +1,6 @@
 # ADR-0005 — Keep the LLM local
 
-- **Status**: proposed
+- **Status**: accepted (owner, 2026-10-28)
 - **Date**: 2026-10-28
 - **Deciders**: owner
 - **Resolves**: Q6 of [`voice-assistant-needs.md`](../specs/voice-assistant-needs.md)

@@ -58,7 +58,7 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 
 - ~~**Q1 — Child restrictions before speaker recognition**~~ — resolved by ADR-0002
   (per-satellite policy, phone unlock with expiry, night schedule).
-- ~~**Q2 — Brain host**~~ — proposed in ADR-0004 (voice pipeline on the Pi 5, LLM on the
+- ~~**Q2 — Brain host**~~ — decided in ADR-0004 (voice pipeline on the Pi 5, LLM on the
   laptop).
 - **Q3 — Second satellite**: which recycled hardware (Pi 1 is too weak for wake word)?
 - **Q4 — Wake word**: shortlist done (MCDA, weights: wake reliability 30, fun 25, English-like
@@ -71,7 +71,7 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
   (hard to say), Zouki 360 ("souci"). **Decision (owner, 2026-10-27): Yuki.** Fallback:
   Ziggy. To measure: false wakes against a list of confusable phrases (NFR-3).
 - **Q5 — Prerequisite**: secure and back up the Home Assistant stack before relying on it.
-- ~~**Q6 — Local or cloud LLM**~~ — proposed in ADR-0005 (local LLM only, NFR-1 unchanged).
+- ~~**Q6 — Local or cloud LLM**~~ — decided in ADR-0005 (local LLM only, NFR-1 unchanged).
 - ~~**Q7 — LLM-path latency**~~ — resolved by ADR-0003 (thinking cue, streamed speech,
   ≤ 15 s; NFR-5).
 - **Q8 — Remote access** (REQ-13, and working on the nodes from outside home): Tailscale or

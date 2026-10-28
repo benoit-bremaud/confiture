@@ -1,6 +1,6 @@
 # ADR-0004 — Split the brain: voice pipeline on the Pi 5, LLM on the laptop
 
-- **Status**: proposed
+- **Status**: accepted (owner, 2026-10-28)
 - **Date**: 2026-10-28
 - **Deciders**: owner
 - **Resolves**: Q2 of [`voice-assistant-needs.md`](../specs/voice-assistant-needs.md)

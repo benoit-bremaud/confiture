@@ -200,3 +200,7 @@
   control; WAA auto-delete 3 months; `configure-sd.sh` (power save off, `i2c,gpio`); Pi 3
   Wi-Fi drops; projector teardown and dev options off; remove `~/ollama-install.log` on the
   ProBook.
+- ADR-0004 (B, Pi 5 voice pipeline + ProBook LLM, 385) and ADR-0005 (A, local LLM only, 395)
+  accepted by the owner after a detailed walk-through of weights and sensitivity. Open check:
+  speech-to-text speed on the Pi 5 (assumed in B's responsiveness score, not measured yet).
+  Unblocks Ollama ↔ Home Assistant.
