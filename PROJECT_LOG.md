@@ -240,9 +240,45 @@
   Upgraded: `ollama/ollama:0.40.4@sha256:926d40fd…b1a6`, same flags, same volume; Uid 1000,
   CapEff 0, NoNewPrivs 1, healthy; HA → yuki answered (14.5 s cold). Old container kept stopped
   as `ollama-0.12.6` for rollback.
-- Pulled: `qwen3:4b-instruct-2507-q4_K_M`, `gemma3:4b`. `ministral-3:3b` was downloading when
-  the ProBook dropped off the network (no ping, no SSH, absent from Tailscale); owner away from
-  home. Cause unknown (battery, sleep, Wi-Fi) — check `journalctl -b -1` when it is back.
-  Meanwhile Yuki's free questions fail; local intents still work.
+- Pulled: `qwen3:4b-instruct-2507-q4_K_M`, `gemma3:4b`, `ministral-3:3b` (all three done).
+  False alarm: the "ProBook down" was the work PC leaving the home LAN with the owner
+  (now on an outside network); the ProBook stayed up (uptime 8 h 39). From outside, reach the LAN
+  through the Pi 5 on Tailscale: `ssh -J <user>@<pi5-tailscale-ip> <user>@<probook-ip>`.
 - Benchmark script ready (scratchpad `bench.py`): 7 French/English questions, Yuki system
   prompt, warm timings; run on qwen2.5:3b, qwen3:4b-instruct, gemma3:4b, ministral-3:3b.
+- Option A (friendly answer when the LLM is down), first attempt reverted: a wildcard
+  `custom_sentences` intent + `intent_script` catch-all. HA always prefers custom sentences
+  over built-in intents, so it stole "quelle heure est-il ?" too, and the script (mode
+  `single`) failed with "Already running". Config restored from `configuration.yaml.bak-2026-10-28`,
+  files removed, HA restarted, pipeline "Yuki" checked (agent `conversation.yuki`, French,
+  prefer local on).
+- Benchmark, warm means (7 questions): qwen2.5:3b 6.3 s (8.3 tok/s, short, one wrong answer,
+  says "je ne sais pas" on the trap question); qwen3:4b-instruct 13.0 s (emojis, invents
+  family details); gemma3:4b 17.2 s (invents a 1987 curling winner); ministral-3:3b 11.4 s
+  (invents a winner and a captain, Markdown, emojis, follow-up questions). MCDA (speed 35,
+  reliability 35, spoken style 20, RAM 10): qwen2.5:3b 410, qwen3 245, gemma3 215,
+  ministral-3 165. The three losers and `ollama-0.12.6` still on disk (about 8 GB): delete
+  only with the owner's approval.
+
+## 2026-10-28 — LLM-down measurement and family question test
+
+- Measured the LLM-down path on the "Yuki" pipeline (Ollama container stopped about one
+  minute): free question → `intent-failed` "Unexpected error during intent recognition" in
+  0.1 s (English, technical; in voice, probably silence, unverified); local intent unaffected.
+  Not covered: the ProBook powered off (TCP timeout, possibly much longer). Owner decision
+  (MCDA): A1, keep the generic error now (420 vs A2 custom agent 375 vs A3 HACS 320).
+  **Follow-up: build A2 (own fallback conversation agent with its own timeout) at the voice
+  step** — no GitHub remote yet, so no issue: tracked here.
+- Gotcha: the preferred pipeline is still "Home Assistant" (English); my first test hit it by
+  mistake. Pass `pipeline` explicitly, and pick "Yuki" for the Nest and microphones later.
+- T1, 20 family questions on `yuki` (qwen2.5:3b), owner-chosen test: cold start 10.7 s (load
+  3.6 s); mean 5.6 s, median 4.7 s, max 20.3 s (crêpes recipe, cut by `num_predict 160`).
+  About 5 of 20 wrong, one unsafe ("hard-boiled egg 12-15 min in the microwave"); the
+  French-only rule turned "merci en espagnol" into "merci". A rerun shows high variance
+  (Mona Lisa once credited to Magritte).
+- M1 (owner choice, MCDA 405): Modelfile rules added (translations allowed, recipe in one
+  sentence first, safe advice and ask an adult). Gotcha: Ollama 0.40.4 rejects `create -f -`
+  from stdin; copy the file into the container first. Rerun: mean 4.9 s, median 3.9 s, max
+  19.5 s; still about 5 of 20 wrong (egg "5-6 min in a pan", "merci" again, horse fastest,
+  numbered list on "peur du noir"). Prompt rules do not fix the 3B model's knowledge.
+  HA sends its own copy of the instructions: the new rules are not in HA yet.
