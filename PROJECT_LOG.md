@@ -152,3 +152,5 @@
   `<probook-ip>`, hostname `hp-probook`, rule active; listed next to bb-homelab (<pi5-ip>).
 - Box DHCP reservation added for the Nest Mini: `<mac>` → `<nest-mini-ip>`,
   hostname `nest-mini-sejour`, rule active.
+- Box DHCP reservation added for the Pi 3: `<mac>` → `<pi3-ip>`, hostname
+  `pitest`, rule active. The Pi 5 (`<pi5-ip>`) was already reserved as bb-homelab.
