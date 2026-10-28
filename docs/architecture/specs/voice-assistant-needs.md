@@ -59,7 +59,8 @@ deployment and data-flow diagrams. Use cases and NFR-1 to NFR-4:
 Owner answers, each settled by MCDA (weights /100, totals /500). Facts carry no score.
 
 - **Facts**: the test microphone is the webcam's, plugged into the Pi 5; the Pi 5 sits in the
-  living room, in plain view; children: a young child (about 7) and an adult child (tune for the young child's voice); in
+  living room, in plain view; children: a young child (about 7) and an adult child (tune
+  for the young child's voice); in
   stock: Zigbee and Wi-Fi bulbs, Zigbee buttons, a better USB microphone.
 - **REQ-14 — First room**: the living room (410; child's bedroom 310, kitchen 300).
 - **REQ-15 — Listening device**: the Pi 5 itself listens, through a USB microphone on an
