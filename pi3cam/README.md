@@ -61,4 +61,4 @@ read -rs PW && printf '%s\n' "$PW" > ~/.config/pi3cam/mqtt-password
 - Started from crontab, not systemd (no sudo when it was set up).
 - Tilt-down limit (2300 µs) is provisional; recalibrate once the Pi is mounted high.
 - The first move after a restart may jump: the real servo position is unknown.
-- Very bright direct sunlight (above ~88 000 lx) saturates the sensor: no value then.
+- Light beyond the sensor's range at 1× gain (datasheet: up to ~88 000 lx) gives no value.

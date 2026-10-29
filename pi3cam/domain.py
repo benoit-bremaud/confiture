@@ -36,10 +36,10 @@ DELETE_PREFIX = f"{TRASH} Supprimer « "
 HA_APPLY_DELAY = 0.5  # let HA apply new select options before the state
 NAME_MAX = 30
 
-# TSL25911 light sensor (confiture#8, MCDA auto-gain option B, 450/500).
+# TSL25911 light sensor (confiture#8): auto-ranged gain.
 LIGHT_PERIOD = 30  # s between illuminance reports
 GAINS = (1, 25, 428)  # low, medium, high: medium first, then auto-ranged
-INTEGRATION_MS = 100
+INTEGRATION_MS = 100  # set by the adapter (TSL_ATIME_100MS)
 SATURATED = 36863  # full count at 100 ms (datasheet)
 TOO_DARK = 100  # below this full-spectrum count, a higher gain gives better resolution
 LUX_DF = 408  # device factor of the reference lux equation
@@ -171,7 +171,7 @@ class LightMeter:
             self.gain = retry
         else:
             return None  # still out of range after trying every gain
-        if full >= SATURATED:
+        if full >= SATURATED:  # still saturated at the lowest gain
             return None
         return lux(full, ir, self.gain)
 

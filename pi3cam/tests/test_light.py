@@ -7,7 +7,7 @@ import json
 import pytest
 
 from adapters import Tsl2591Sensor
-from domain import SATURATED, LightMeter, discovery_configs, lux, next_gain
+from domain import SATURATED, TOO_DARK, LightMeter, discovery_configs, lux, next_gain
 
 
 class FakeBus:
@@ -32,7 +32,7 @@ class FakeSensor:
 
 def test_lux_reference_equation():
     # cpl = 100 ms × 25 / 408; lux = (1000 − 200) × (1 − 200/1000) / cpl
-    assert lux(1000, 200, 25) == pytest.approx(800 * 0.8 / (2500 / 408))
+    assert lux(1000, 200, 25) == pytest.approx(104.448)
 
 
 def test_lux_scales_inversely_with_gain():
@@ -48,10 +48,13 @@ def test_lux_is_zero_in_the_dark_and_never_negative():
     ("gain", "full", "expected"),
     [
         (25, SATURATED, 1),
+        (25, SATURATED - 1, None),
+        (428, SATURATED, 25),
         (1, SATURATED, None),  # lowest gain: nothing lower to try
-        (25, 99, 428),
+        (25, TOO_DARK - 1, 428),
+        (25, TOO_DARK, None),
+        (1, 5, 25),
         (428, 5, None),  # highest gain: nothing higher to try
-        (25, 5000, None),
     ],
 )
 def test_next_gain(gain, full, expected):
@@ -61,9 +64,7 @@ def test_next_gain(gain, full, expected):
 def test_meter_publishes_lux_at_medium_gain():
     bus = FakeBus()
     LightMeter(FakeSensor((1000, 200)), bus).report()
-    assert bus.published == [
-        ("confiture/pi3/illuminance", f"{lux(1000, 200, 25):.1f}", False)
-    ]
+    assert bus.published == [("confiture/pi3/illuminance", "104.4", False)]
 
 
 def test_meter_drops_gain_when_saturated_and_keeps_it():
@@ -83,14 +84,24 @@ def test_meter_raises_gain_in_the_dark():
 
 def test_meter_publishes_nothing_when_saturated_at_lowest_gain():
     bus = FakeBus()
-    LightMeter(FakeSensor((SATURATED, 0), (SATURATED, 0)), bus).report()
+    sensor = FakeSensor((SATURATED, 0), (SATURATED, 0))
+    LightMeter(sensor, bus).report()
     assert bus.published == []
+    assert sensor.gains == [25, 1]
 
 
 def test_meter_gives_up_on_a_flickering_light():
     sensor = FakeSensor((SATURATED, 0), (10, 0), (SATURATED, 0))
     assert LightMeter(sensor, FakeBus()).read_lux() is None
     assert len(sensor.gains) == 3
+
+
+def test_meter_keeps_the_new_gain_when_the_retry_fails():
+    sensor = FakeSensor((SATURATED, 0), None, (2000, 300))
+    meter = LightMeter(sensor, FakeBus())
+    assert meter.read_lux() is None
+    meter.read_lux()
+    assert sensor.gains == [25, 1, 1]
 
 
 def test_meter_publishes_nothing_on_sensor_failure():
@@ -120,26 +131,30 @@ class FakeSMBus:
         return self.block
 
 
-def test_sensor_powers_on_with_als_enabled():
+ENABLE = (0x29, 0xA0, 0x03)  # PON | AEN
+
+
+def test_sensor_touches_no_register_until_the_first_read():
     bus = FakeSMBus()
     Tsl2591Sensor(bus, wait=lambda _s: None)
-    assert bus.writes == [(0x29, 0xA0, 0x03)]  # ENABLE: PON | AEN
+    assert bus.writes == []
 
 
-def test_sensor_sets_gain_once_and_decodes_little_endian_counts():
-    bus = FakeSMBus(block=(0x34, 0x12, 0x78, 0x00))
+def test_sensor_powers_on_sets_gain_once_and_decodes_little_endian_counts():
+    bus = FakeSMBus(block=(0x34, 0x12, 0x78, 0x56))
     waits = []
     sensor = Tsl2591Sensor(bus, wait=waits.append)
-    assert sensor.read(428) == (0x1234, 0x78)
+    assert sensor.read(428) == (0x1234, 0x5678)
+    assert len(waits) == 2  # the cycle mixing both gains is skipped
     sensor.read(428)
-    assert bus.writes[1:] == [(0x29, 0xA1, 0x20)]  # CONTROL: high gain, 100 ms
+    assert len(waits) == 3
+    assert bus.writes == [ENABLE, (0x29, 0xA1, 0x20)]  # CONTROL: high gain, 100 ms
     assert bus.reads == [(0x29, 0xB4, 4)] * 2  # C0DATAL..C1DATAH
-    assert len(waits) == 3  # extra cycle skipped after the gain change only
 
 
-def test_sensor_returns_none_and_rewrites_gain_after_a_bus_error():
+def test_sensor_powers_on_again_after_a_bus_error():
     bus = FakeSMBus(fail=True)
     sensor = Tsl2591Sensor(bus, wait=lambda _s: None)
-    assert sensor.read(25) is None
-    sensor.read(25)
-    assert bus.writes[1:] == [(0x29, 0xA1, 0x10)] * 2
+    assert sensor.read(1) is None
+    sensor.read(1)
+    assert bus.writes == [ENABLE, (0x29, 0xA1, 0x00)] * 2

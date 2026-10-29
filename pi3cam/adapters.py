@@ -61,23 +61,33 @@ TSL_ADDR = 0x29
 TSL_COMMAND = 0xA0  # command bit + normal operation, ORed with every register address
 TSL_ENABLE, TSL_CONTROL, TSL_C0DATAL = 0x00, 0x01, 0x14
 TSL_POWER_ON, TSL_ALS_ENABLE = 0x01, 0x02
-TSL_GAIN_BITS = {1: 0x00, 25: 0x10, 428: 0x20, 9876: 0x30}  # CONTROL bits 5:4
-TSL_ATIME_100MS = 0x00  # CONTROL bits 2:0
+TSL_GAIN_BITS = {1: 0x00, 25: 0x10, 428: 0x20}  # CONTROL bits 5:4, domain GAINS
+TSL_ATIME_100MS = 0x00  # CONTROL bits 2:0; domain INTEGRATION_MS and SATURATED match
 TSL_CYCLE = 0.12  # one 100 ms integration cycle, with margin
 
 
 class Tsl2591Sensor:
-    """Waveshare Pan-Tilt HAT TSL25911 light sensor on I²C bus 1, 100 ms integration."""
+    """Waveshare Pan-Tilt HAT TSL25911 light sensor on I²C bus 1, 100 ms integration.
+
+    No I²C access at construction: a missing or failing sensor must never stop the
+    camera agent from starting.
+    """
 
     def __init__(self, bus: SMBus, wait: Callable[[float], None] = time.sleep) -> None:
         self.bus, self.wait = bus, wait
-        self.gain: int | None = None
-        bus.write_byte_data(
-            TSL_ADDR, TSL_COMMAND | TSL_ENABLE, TSL_POWER_ON | TSL_ALS_ENABLE
-        )
+        self.gain: int | None = None  # None: power on and set the gain at the next read
 
     def read(self, gain: int) -> tuple[int, int] | None:
+        """(full-spectrum, infrared) counts at gain, or None on an I²C error.
+
+        Blocks one integration cycle, two after a gain change. After an error the sensor
+        is powered on again at the next read, in case it was reset (brown-out).
+        """
         try:
+            if self.gain is None:
+                self.bus.write_byte_data(
+                    TSL_ADDR, TSL_COMMAND | TSL_ENABLE, TSL_POWER_ON | TSL_ALS_ENABLE
+                )
             if gain != self.gain:
                 self.bus.write_byte_data(
                     TSL_ADDR,
@@ -93,7 +103,7 @@ class Tsl2591Sensor:
             )
         except OSError:
             log.warning("TSL25911 read failed")
-            self.gain = None  # rewrite the gain on the next read
+            self.gain = None
             return None
         return c0l | c0h << 8, c1l | c1h << 8
 
