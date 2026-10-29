@@ -1,12 +1,12 @@
 # Local review — confiture (branch diff main...feat/4-piper-tts)
 
 - Date: 2026-10-28
-- Commit: c4a3f8d
+- Commit: 661ad5b (gate re-run on this head on 2026-10-29; the next commit only updates this report)
 - Scope: branch diff `main...HEAD`
 - Checks run: design · docs · security · correctness · containers (tests: no executable code, brick 0 waiver)
 - Verdict: ship as-is after the fixes below · Must 1 (all fixed) · Should 4 (all fixed) · Nice 3 (issue)
 
-## Pre-merge gate (head SHA c4a3f8d)
+## Pre-merge gate (head SHA 661ad5b)
 
 | Step | Result |
 |---|---|
@@ -19,6 +19,10 @@
 Other checks: Trivy config `deploy` (HIGH, CRITICAL): 0 · actionlint clean · `docker compose config` valid.
 
 - Gate: **GREEN — push authorised**; merge after CI and the owner's approval
+
+## PR review (Codex)
+
+- `deploy/pi5/README.md:10` `[correctness]` (Codex P2) · `scp -r` into an existing folder nests it, updates kept the old compose · **fixed** in 661ad5b
 
 ## 🔴 Must Have
 
