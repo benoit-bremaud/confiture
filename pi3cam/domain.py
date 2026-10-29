@@ -138,10 +138,10 @@ def lux(full: int, ir: int, gain: int, integration_ms: int = INTEGRATION_MS) -> 
     return (full - ir) * (1 - ir / full) / counts_per_lux
 
 
-def next_gain(gain: int, full: int) -> int | None:
-    """Gain to retry with: lower when saturated, higher when too dark; None keeps it."""
+def next_gain(gain: int, full: int, ir: int = 0) -> int | None:
+    """Gain to retry with: lower when either channel saturates, higher when too dark; None keeps it."""
     i = GAINS.index(gain)
-    if full >= SATURATED and i > 0:
+    if max(full, ir) >= SATURATED and i > 0:
         return GAINS[i - 1]
     if full < TOO_DARK and i < len(GAINS) - 1:
         return GAINS[i + 1]
@@ -165,13 +165,13 @@ class LightMeter:
             if counts is None:
                 return None
             full, ir = counts
-            retry = next_gain(self.gain, full)
+            retry = next_gain(self.gain, full, ir)
             if retry is None:
                 break
             self.gain = retry
         else:
             return None  # still out of range after trying every gain
-        if full >= SATURATED:  # still saturated at the lowest gain
+        if max(full, ir) >= SATURATED:  # still saturated at the lowest gain
             return None
         return lux(full, ir, self.gain)
 

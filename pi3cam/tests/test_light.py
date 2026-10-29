@@ -61,6 +61,16 @@ def test_next_gain(gain, full, expected):
     assert next_gain(gain, full) == expected
 
 
+def test_next_gain_lowers_when_only_infrared_saturates():
+    assert next_gain(25, 30000, SATURATED) == 1
+
+
+def test_meter_drops_a_reading_with_infrared_saturated_at_lowest_gain():
+    sensor = FakeSensor((30000, SATURATED), (30000, SATURATED))
+    assert LightMeter(sensor, FakeBus()).read_lux() is None
+    assert sensor.gains == [25, 1]
+
+
 def test_meter_publishes_lux_at_medium_gain():
     bus = FakeBus()
     LightMeter(FakeSensor((1000, 200)), bus).report()
