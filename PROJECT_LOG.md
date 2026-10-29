@@ -308,10 +308,10 @@
   pause with auto-resume, 7-day text log, young child 8/10 criterion). Next: technical choices
   (speech-to-text engine, Piper voices, wake word "Yuki" model), then UML.
 
-## 2026-10-28 — Brick 0: publish the repository (issue #1)
+## 2026-10-28 — Brick 0: publish the repository (issue benoit-bremaud/confiture#1)
 
 - Public repo `benoit-bremaud/confiture` created (owner P1: public during development,
-  private later), project #76, secret scanning and push protection on.
+  private later), GitHub project 76, secret scanning and push protection on.
 - Two history scrubs removed personal and network data; real values live in the gitignored
   `inventory.local.md`. `CLAUDE.md` forbids sensitive data; `.env.example` has placeholders.
 - CI: gitleaks with personal-data rules (MAC, private IPv4, Tailscale), no report artifact.
@@ -319,28 +319,29 @@
 - **Waiver** (owner, MCDA 450/500): pre-merge gate steps 1–2 (tests, coverage) waived until
   the first PR with executable code; shellcheck and actionlint run locally meanwhile.
 - SonarQube on every local CI run (owner rule, all projects; global rule tracked in
-  agents-skills#159): `sonar-project.properties` added, local scan PASSED, 0 issues.
+  benoit-bremaud/agents-skills#159): `sonar-project.properties` added, local scan PASSED, 0 issues.
 
-## 2026-10-28 — Brick 1: Piper text-to-speech (issue #4)
+## 2026-10-28 — Brick 1: Piper text-to-speech (issue benoit-bremaud/confiture#4)
 
 - Piper (`wyoming-piper` 2.5.2, voice `fr_FR-siwis-medium`) deployed on the Pi 5 from
   `deploy/pi5/` (owner approved the download), loopback only, healthy; Wyoming integration
   added in Home Assistant (`tts.piper`). ADR-0006 records the three MCDA choices.
 - Blockers found and fixed: Piper wants `fr_FR`, not `fr`; Home Assistant never loaded
-  scripts (home-assistant#32); the Nest could not fetch the audio because UFW drops 8123 from
-  the LAN, so 8123 opens to the Nest only (bb-homelab#162) and `internal_url` is the Pi LAN URL.
+  scripts (benoit-bremaud/home-assistant#32); the Nest could not fetch the audio because UFW
+  drops 8123 from the LAN, so 8123 opens to the Nest only (benoit-bremaud/bb-homelab#162) and
+  `internal_url` is the Pi LAN URL.
 - The ProBook "sleep" was Ollama down: `docker.service` was socket-activated only; the owner
   enabled it at boot.
 - Measured: answer text 2.0 s warm (16.6 s cold), the Nest starts playing at 2.2 s.
 - Gotcha: in zsh, `scp -r deploy/pi5 $HOST:confiture-pi5` reads `:c` as a history modifier and
   copies locally; write `${HOST}:confiture-pi5`.
 
-## 2026-10-29 — Brick 2: Pan-Tilt camera agent (issue #3, PR #7)
+## 2026-10-29 — Brick 2: Pan-Tilt camera agent (benoit-bremaud/confiture#3, benoit-bremaud/confiture#7)
 
 - The Pi 3 agent was split into a pure domain and adapters (ADR-0007, MCDA 445/500 vs single
   file 335 and full hexagonal 345); UC12, aim-and-look sequence and deployment diagrams added.
 - Scope decisions (owner, MCDA): the "recentre" button is the "Position par défaut" saved
-  position; the TSL25911 light sensor moved to #8.
+  position; the TSL25911 light sensor moved to benoit-bremaud/confiture#8.
 - review-local found two inputs that killed the MQTT thread (`inf`, invalid UTF-8), a
   corrupt-JSON restart loop and unlocked shared state; all fixed. Codex then found four real
   hardware and privacy issues: the PCA9685 forgets its 50 Hz prescale on power loss, a failed
@@ -355,7 +356,7 @@
   ping, so test SSH, not ping; `pkill -f "<pattern>"` over SSH kills the SSH command itself,
   so use a `[p]attern`.
 
-## 2026-10-29 — Brick 3: TSL25911 illuminance sensor (issue #8)
+## 2026-10-29 — Brick 3: TSL25911 illuminance sensor (issue benoit-bremaud/confiture#8)
 
 - The Pan-Tilt HAT light sensor (I²C 0x29, ID 0x50) is now an HA `sensor` (lux) on
   `confiture/pi3/illuminance`, published every 30 s; UC3 partly realised (traceability matrix).
@@ -369,3 +370,14 @@
 - Hardware check on the Pi 3 (evening, room light): 30.7 lx at 25×, 31.1 lx at 428× on the same
   scene, 34 lx at 1× (coarse at low light, as expected); HA Discovery config and states seen
   on the broker. Previous agent files backed up in `~/pi3cam-backup/pre-8/`.
+
+## 2026-10-29 — Hardening of Piper and yuki_say (issue benoit-bremaud/confiture#5)
+
+- Piper container now `read_only` with a `/tmp` tmpfs and `mem_limit: 512m` (MCDA 430/500 over
+  1g 400 and 256m 345); `deploy/pi5/.env.example` lists the `PIPER_*` defaults.
+- Checked on the Pi 5: a fresh read-only container downloads the voice into `data/` and turns
+  healthy; the redeployed `confiture-piper` is healthy with a read-only root.
+- Gotcha: the Pi 5 kernel has no memory cgroup (`Limitation discarded`), so `mem_limit` is
+  inert until `cgroup_enable=memory` is set on the host; documented, host change not made.
+- `yuki_say`: `max: 3` on the queue; the header states it is the UI paste format.
+- Log references now use full `owner/repo#N`.
