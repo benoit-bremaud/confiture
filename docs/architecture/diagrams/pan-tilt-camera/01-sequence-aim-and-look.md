@@ -32,7 +32,7 @@ sequenceDiagram
       CAM-->>AG: JPEG
       AG-)MQ: confiture/pi3/camera
     else camera OFF (privacy)
-      AG-)MQ: confiture/pi3/camera (empty)
+      AG-)MQ: confiture/pi3/camera and camera_hd (empty)
     end
     MQ-)HA: image
   end

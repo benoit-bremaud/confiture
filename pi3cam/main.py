@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 from pathlib import Path
@@ -17,13 +18,21 @@ from domain import BASE, INTERVAL, SUBSCRIPTIONS, Agent
 
 # Local, never committed (mode 600): broker host, MQTT user, MQTT password — one per file.
 CONF = Path.home() / ".config/pi3cam"
+log = logging.getLogger("pi3cam")
 
 
 def run_in_thread(task: Callable[[], None]) -> None:
+    """Run a task on a daemon thread (dies with the agent)."""
     threading.Thread(target=task, daemon=True).start()
 
 
 def main() -> None:
+    """Wire the adapters, then run the mover thread and the capture loop forever.
+
+    Subscribing inside on_connect re-subscribes after every reconnection; the last will
+    makes HA mark the entities unavailable when the Pi drops off the network.
+    """
+    os.umask(0o077)  # cron does not inherit the install shell's umask
     logging.basicConfig(level=logging.INFO)
     broker, user, password = (
         (CONF / f).read_text().strip()
@@ -43,24 +52,31 @@ def main() -> None:
         agent.on_connect()
         c.subscribe([(t, 0) for t in SUBSCRIPTIONS])
 
+    def on_message(_c, _u, msg):
+        # A bad command must never kill paho's network thread.
+        try:
+            agent.handle(msg.topic, msg.payload.decode(errors="replace"))
+        except Exception:
+            log.exception("command on %s failed", msg.topic)
+
     client.username_pw_set(user, password)
     client.will_set(f"{BASE}/status", "offline", retain=True)
     client.on_connect = on_connect
-    client.on_message = lambda _c, _u, msg: agent.handle(
-        msg.topic, msg.payload.decode()
-    )
+    client.on_message = on_message
     client.connect_async(broker)
     client.loop_start()
 
     def mover():
         while True:
-            agent.next_move()
+            try:
+                agent.next_move()
+            except Exception:
+                log.exception("move failed")
 
     run_in_thread(mover)
     while True:
         agent.shoot()
-        agent.shoot_now.wait(INTERVAL)
-        agent.shoot_now.clear()
+        agent.wait_for_shot(INTERVAL)
 
 
 if __name__ == "__main__":

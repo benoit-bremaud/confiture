@@ -139,15 +139,30 @@ def test_move_ramps_then_cuts_the_signal():
     assert agent.state["pan"] == 10
 
 
-def test_move_beyond_limits_is_clamped():
+def test_move_from_an_offset_ramps_from_the_last_position():
     agent, servos, _ = make_agent()
-    agent.move("tilt", -500)
-    assert agent.state["tilt"] == -100
-    assert servos.calls[-2] == ("pulse", 0, AXES["tilt"]["minus"])
+    agent.state["pan"] = 50
+    agent.move("pan", -50)
+    pulses = [call[2] for call in servos.calls if call[0] == "pulse"]
+    assert pulses[0] == pulse_for("pan", 50)
+    assert pulses[-1] == pulse_for("pan", -50)
+    assert all(abs(b - a) <= STEP_US for a, b in zip(pulses, pulses[1:]))
+
+
+@pytest.mark.parametrize("axis", ["pan", "tilt"])
+@pytest.mark.parametrize("target,end", [(500, "plus"), (-500, "minus")])
+def test_move_beyond_limits_is_clamped(axis, target, end):
+    agent, servos, _ = make_agent()
+    agent.move(axis, target)
+    low, high = sorted((AXES[axis]["minus"], AXES[axis]["plus"]))
+    pulses = [call[2] for call in servos.calls if call[0] == "pulse"]
+    assert all(low <= us <= high for us in pulses)
+    assert pulses[-1] == AXES[axis][end]
+    assert agent.state[axis] == (100 if target > 0 else -100)
 
 
 # --- commands -----------------------------------------------------------------------
-def test_pan_command_moves_saves_reports_and_shoots():
+def test_pan_command_is_queued_then_moved_saved_reported():
     store = FakeStore()
     agent, _, bus = make_agent(store=store)
     agent.handle(f"{BASE}/pan/set", " 35 ")
@@ -158,7 +173,7 @@ def test_pan_command_moves_saves_reports_and_shoots():
     assert agent.shoot_now.is_set()
 
 
-@pytest.mark.parametrize("payload", ["abc", "", "1,5"])
+@pytest.mark.parametrize("payload", ["abc", "", "1,5", "inf", "-inf", "nan", "1e999"])
 def test_malformed_move_is_ignored(agent, payload):
     agent.handle(f"{BASE}/tilt/set", payload)
     assert agent.moves.empty()
@@ -185,8 +200,9 @@ def test_privacy_off_blanks_images_and_skips_capture():
 
 
 def test_privacy_rejects_other_values(agent):
+    agent.handle(f"{BASE}/privacy/set", "OFF")
     agent.handle(f"{BASE}/privacy/set", "maybe")
-    assert agent.state["camera"] == "ON"
+    assert agent.state["camera"] == "OFF"
 
 
 def test_hd_request_publishes_hd_then_light():
@@ -220,7 +236,7 @@ def test_save_preset_under_typed_name():
 
 def test_preset_name_is_truncated(agent):
     agent.handle(f"{BASE}/preset_name/set", "x" * 50)
-    assert "x" * 30 in agent.presets
+    assert list(agent.presets) == [DEFAULT, "x" * 30]
 
 
 @pytest.mark.parametrize("name", ["", "🗑 Supprimer « Porte »", "🗑 trash"])
@@ -229,9 +245,12 @@ def test_trash_prefix_and_empty_names_are_reserved(agent, name):
     assert list(agent.presets) == [DEFAULT]
 
 
-def test_go_to_preset_moves_both_axes(agent):
+def test_go_to_preset_moves_both_axes_and_republishes():
+    agent, _, bus = make_agent()
     agent.presets["Porte"] = [30, 40]
     agent.handle(f"{BASE}/preset/set", "Porte")
+    assert list(agent.moves.queue) == [("pan", 30), ("tilt", 40)]
+    assert bus.last(f"{BASE}/preset/state") == "Porte"
     drain(agent)
     assert (agent.state["pan"], agent.state["tilt"]) == (30, 40)
     assert agent.selected == "Porte"
@@ -246,12 +265,19 @@ def test_default_preset_recentres(agent):
 
 def test_delete_option_removes_the_selected_preset():
     store = FakeStore()
-    agent, _, _ = make_agent(store=store)
+    agent, _, bus = make_agent(store=store)
     agent.handle(f"{BASE}/preset_name/set", "Porte")
     agent.handle(f"{BASE}/preset/set", "🗑 Supprimer « Porte »")
+    config = json.loads(bus.last("homeassistant/select/pi3_preset/config"))
+    assert config["options"] == [DEFAULT]
     assert "Porte" not in agent.presets
     assert agent.selected == DEFAULT
     assert "Porte" not in store.data["presets"]
+
+
+def test_default_position_cannot_be_deleted(agent):
+    agent.handle(f"{BASE}/preset/set", f"🗑 Supprimer « {DEFAULT} »")
+    assert DEFAULT in agent.presets
 
 
 def test_default_offers_no_delete_option(agent):
@@ -267,11 +293,38 @@ def test_state_and_presets_survive_a_restart():
     assert agent.presets == {DEFAULT: [0, 0], "Porte": [1, 2]}
 
 
+@pytest.mark.parametrize(
+    "state,presets",
+    [
+        ({"pan": "x", "tilt": float("inf"), "camera": "MAYBE"}, {"a": [1], "b": "no"}),
+        ({"pan": True, "tilt": None}, {"c": [1, float("nan")], "d": [1, "2"]}),
+    ],
+)
+def test_bad_stored_data_falls_back_to_defaults(state, presets):
+    agent, _, _ = make_agent(store=FakeStore(state=state, presets=presets))
+    assert agent.state == {"pan": 0, "tilt": 0, "camera": "ON"}
+    assert agent.presets == {DEFAULT: [0, 0]}
+
+
+def test_stored_positions_are_clamped():
+    store = FakeStore(state={"pan": 400}, presets={"Loin": [-300, 300]})
+    agent, _, _ = make_agent(store=store)
+    assert agent.state["pan"] == 100
+    assert agent.presets["Loin"] == [-100, 100]
+
+
+def test_wait_for_shot_consumes_the_request(agent):
+    agent.shoot_now.set()
+    agent.wait_for_shot(0)
+    assert not agent.shoot_now.is_set()
+
+
 # --- discovery ----------------------------------------------------------------------
 def test_on_connect_announces_availability_entities_and_state():
     agent, _, bus = make_agent()
     agent.on_connect()
     assert bus.messages[0] == (f"{BASE}/status", "online", True)
+    assert all(retain for topic, _, retain in bus.messages if "/camera" not in topic)
     topics = {topic for topic, _, _ in bus.messages}
     assert set(discovery_configs()) <= topics
     assert {f"{BASE}/pan/state", f"{BASE}/preset/state"} <= topics

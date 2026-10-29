@@ -7,11 +7,15 @@ below are injected by main.py (ADR-0007).
 from __future__ import annotations
 
 import json
+import math
 import queue
 import threading
 from typing import Callable, Protocol
 
 BASE = "confiture/pi3"
+PAN_SET, TILT_SET = "pan/set", "tilt/set"
+PRESET_SET, PRESET_NAME_SET = "preset/set", "preset_name/set"
+SNAPSHOT_HD, PRIVACY_SET = "snapshot_hd", "privacy/set"
 LIGHT = (640, 360, 70)  # width, height, JPEG quality: light stream every INTERVAL s
 HD = (1280, 720, 85)  # on demand only (MCDA option E, 425/500)
 INTERVAL = 2
@@ -27,8 +31,9 @@ STEP_DELAY = 0.02
 SETTLE = 0.3  # hold the final pulse before cutting the signal
 
 DEFAULT = "Position par défaut"
-DELETE_PREFIX = "🗑 Supprimer « "
 TRASH = "🗑"  # reserved for the delete option (QA 2026-10-28: name collision)
+DELETE_PREFIX = f"{TRASH} Supprimer « "
+HA_APPLY_DELAY = 0.5  # let HA apply new select options before the state
 NAME_MAX = 30
 
 DEVICE = {
@@ -50,38 +55,41 @@ RETIRED = [
 ]
 SUBSCRIPTIONS = [
     f"{BASE}/{t}"
-    for t in (
-        "pan/set",
-        "tilt/set",
-        "snapshot_hd",
-        "privacy/set",
-        "preset/set",
-        "preset_name/set",
-    )
+    for t in (PAN_SET, TILT_SET, SNAPSHOT_HD, PRIVACY_SET, PRESET_SET, PRESET_NAME_SET)
 ]
 
 
 class Servos(Protocol):
+    """Raw servo output: write_pulse sets a pulse width in µs on a channel; cut stops
+    the PWM signal so the servo neither holds nor jitters."""
+
     def write_pulse(self, channel: int, us: int) -> None: ...
     def cut(self, channel: int) -> None: ...
 
 
 class Camera(Protocol):
+    """Still-image source: JPEG bytes, or b"" on failure (callers skip empty images)."""
+
     def capture(self, width: int, height: int, quality: int) -> bytes: ...
 
 
 class Publisher(Protocol):
+    """Fire-and-forget MQTT publish; retained messages survive reconnections."""
+
     def publish(
         self, topic: str, payload: str | bytes, retain: bool = False
     ) -> None: ...
 
 
 class Store(Protocol):
+    """Named JSON persistence: load returns None when nothing valid was saved."""
+
     def load(self, name: str) -> dict | None: ...
     def save(self, name: str, data: dict) -> None: ...
 
 
 def clamp(position: float) -> int:
+    """Round a position into -100..100."""
     return max(-100, min(100, round(position)))
 
 
@@ -91,6 +99,15 @@ def pulse_for(axis: str, position: float) -> int:
     position = clamp(position)
     end = a["plus"] if position >= 0 else a["minus"]
     return round(a["centre"] + (end - a["centre"]) * abs(position) / 100)
+
+
+def is_position(value: object) -> bool:
+    """True for a finite number (bool excluded): guards commands and stored data."""
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
 
 
 def ramp(current: int, goal: int) -> list[int]:
@@ -182,16 +199,21 @@ class Agent:
         self.moves: queue.Queue[tuple[str, int]] = queue.Queue()
         self.shoot_now = threading.Event()
         self.want_hd = threading.Event()
-        self.state = {
-            "pan": 0,
-            "tilt": 0,
-            "camera": "ON",
-            **(store.load("state") or {}),
-        }
-        self.presets = {DEFAULT: [0, 0], **(store.load("presets") or {})}
+        # One lock for the paho, mover and report threads that share state and presets.
+        self.lock = threading.RLock()
+        self.state: dict[str, int | str] = {"pan": 0, "tilt": 0, "camera": "ON"}
+        saved = store.load("state") or {}
+        for axis in AXES:
+            if is_position(saved.get(axis)):
+                self.state[axis] = clamp(saved[axis])
+        if saved.get("camera") in ("ON", "OFF"):
+            self.state["camera"] = saved["camera"]
+        self.presets: dict[str, list[int]] = {DEFAULT: [0, 0]}
+        for name, pos in (store.load("presets") or {}).items():
+            if isinstance(pos, list) and len(pos) == 2 and all(map(is_position, pos)):
+                self.presets[str(name)[:NAME_MAX]] = [clamp(v) for v in pos]
         self.selected = DEFAULT
 
-    # --- servos -------------------------------------------------------------------------
     def move(self, axis: str, target: float) -> None:
         """Ramp to target, hold, then cut the PWM signal (no position feedback)."""
         channel = AXES[axis]["channel"]
@@ -206,34 +228,48 @@ class Agent:
         """Run one queued move, report it and trigger a snapshot (mover thread)."""
         axis, target = self.moves.get()
         self.move(axis, target)
-        self.save_and_report()
+        with self.lock:
+            self.save_and_report()
         self.shoot_now.set()
 
-    # --- state and presets --------------------------------------------------------------
+    def wait_for_shot(self, timeout: float) -> None:
+        """Block until a command asks for a picture or the interval elapses."""
+        self.shoot_now.wait(timeout)
+        self.shoot_now.clear()
+
     def save_and_report(self) -> None:
+        """Persist the state and publish it, retained, so HA shows it after a restart."""
         self.store.save("state", self.state)
         for key in ("pan", "tilt"):
             self.bus.publish(f"{BASE}/{key}/state", str(self.state[key]), retain=True)
         self.bus.publish(f"{BASE}/privacy/state", self.state["camera"], retain=True)
 
     def delete_option(self) -> str:
+        """Select option that deletes the selected saved position."""
         return f"{DELETE_PREFIX}{self.selected} »"
 
     def preset_options(self) -> list[str]:
+        """Saved positions, plus the delete option unless the default is selected."""
         extra = [self.delete_option()] if self.selected != DEFAULT else []
         return [*self.presets, *extra]
 
     def go_to(self, name: str) -> None:
+        """Queue both axes to a saved position and make it the selected one."""
         pan, tilt = self.presets[name]
         self.moves.put(("pan", pan))
         self.moves.put(("tilt", tilt))
         self.selected = name
 
     def report_presets(self) -> None:
-        # Off the MQTT network thread: the pause below must not block it.
-        self.run_later(self._report_presets)
+        """Republish the preset select asynchronously (returns at once).
 
-    def _report_presets(self) -> None:
+        Runs off the MQTT network thread, which the HA_APPLY_DELAY pause must not block.
+        """
+        with self.lock:
+            options, selected = self.preset_options(), self.selected
+        self.run_later(lambda: self._report_presets(options, selected))
+
+    def _report_presets(self, options: list[str], selected: str) -> None:
         # The select's options live in its discovery config, so republish it on every change.
         self.bus.publish(
             "homeassistant/select/pi3_preset/config",
@@ -241,8 +277,8 @@ class Agent:
                 {
                     "name": "Position",
                     "unique_id": "pi3_preset",
-                    "options": self.preset_options(),
-                    "command_topic": f"{BASE}/preset/set",
+                    "options": options,
+                    "command_topic": f"{BASE}/{PRESET_SET}",
                     "state_topic": f"{BASE}/preset/state",
                     "icon": "mdi:map-marker-outline",
                     **DEVICE,
@@ -250,56 +286,67 @@ class Agent:
             ),
             retain=True,
         )
-        self.sleep(0.5)  # let HA apply the new options before the state
-        self.bus.publish(f"{BASE}/preset/state", self.selected, retain=True)
+        self.sleep(HA_APPLY_DELAY)
+        self.bus.publish(f"{BASE}/preset/state", selected, retain=True)
         self.bus.publish(f"{BASE}/preset_name/state", "", retain=True)
 
     def save_presets(self) -> None:
+        """Persist the presets, then republish the select."""
         self.store.save("presets", self.presets)
         self.report_presets()
 
-    # --- MQTT ---------------------------------------------------------------------------
     def on_connect(self) -> None:
         """(Re)announce everything: runs on every (re)connection, so Wi-Fi drops heal."""
         self.bus.publish(f"{BASE}/status", "online", retain=True)
         for topic, payload in discovery_configs().items():
             self.bus.publish(topic, payload, retain=True)
-        self.save_and_report()
+        with self.lock:
+            self.save_and_report()
         self.report_presets()
 
     def handle(self, topic: str, payload: str) -> None:
         """Apply one HA command; malformed or unknown commands are ignored."""
-        topic, payload = topic.removeprefix(BASE + "/"), payload.strip()
-        if topic in ("pan/set", "tilt/set"):
+        with self.lock:
+            self._handle(topic.removeprefix(BASE + "/"), payload.strip())
+
+    def _handle(self, topic: str, payload: str) -> None:
+        if topic in (PAN_SET, TILT_SET):
             try:
-                self.moves.put((topic.split("/")[0], round(float(payload))))
+                target = float(payload)
             except ValueError:
                 return
-        elif topic == "preset/set" and payload in self.presets:
+            if is_position(target):
+                self.moves.put((topic.split("/")[0], clamp(target)))
+        elif topic == PRESET_SET and payload in self.presets:
             self.go_to(payload)
             self.report_presets()
-        elif topic == "preset/set" and payload == self.delete_option():
+        elif (
+            topic == PRESET_SET
+            and self.selected != DEFAULT
+            and payload == self.delete_option()
+        ):
             self.presets.pop(self.selected, None)
             self.selected = DEFAULT
             self.save_presets()
-        elif topic == "preset_name/set" and payload and not payload.startswith(TRASH):
+        elif topic == PRESET_NAME_SET and payload and not payload.startswith(TRASH):
             # Typing a name saves the current position under it (the default can be redefined).
             name = payload[:NAME_MAX]
             self.presets[name] = [self.state["pan"], self.state["tilt"]]
             self.selected = name
             self.save_presets()
-        elif topic == "snapshot_hd":
+        elif topic == SNAPSHOT_HD:
             self.want_hd.set()
             self.shoot_now.set()
-        elif topic == "privacy/set" and payload in ("ON", "OFF"):
+        elif topic == PRIVACY_SET and payload in ("ON", "OFF"):
             self.state["camera"] = payload
             self.save_and_report()
             self.shoot_now.set()
 
-    # --- camera -------------------------------------------------------------------------
     def shoot(self) -> None:
         """One capture cycle: HD if asked, then the light image; privacy publishes blanks."""
-        if self.state["camera"] != "ON":
+        with self.lock:
+            camera_on = self.state["camera"] == "ON"
+        if not camera_on:
             self.want_hd.clear()
             self.bus.publish(f"{BASE}/camera", b"")
             self.bus.publish(f"{BASE}/camera_hd", b"")

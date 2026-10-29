@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
+import tempfile
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
@@ -19,7 +21,11 @@ FULL_OFF = 0x10  # bit 4 of LEDn_OFF_H
 
 
 class Pca9685Servos:
-    """Waveshare Pan-Tilt HAT servos through the PCA9685 PWM chip on I²C bus 1."""
+    """Waveshare Pan-Tilt HAT servos through the PCA9685 PWM chip on I²C bus 1.
+
+    Assumes the chip already runs at 50 Hz (prescale 121, set once during the HAT setup);
+    this class never writes MODE1 or PRESCALE.
+    """
 
     def __init__(self, bus: SMBus) -> None:
         self.bus = bus
@@ -31,6 +37,7 @@ class Pca9685Servos:
         )
 
     def cut(self, channel: int) -> None:
+        # FULL_OFF sends no signal at all: the servo stops holding (no current, no jitter).
         self.bus.write_i2c_block_data(
             PCA_ADDR, LED0_ON_L + 4 * channel, [0, 0, 0, FULL_OFF]
         )
@@ -40,6 +47,7 @@ class RpicamCamera:
     """Camera Module 3 through rpicam-still, mounted upside down."""
 
     def capture(self, width: int, height: int, quality: int) -> bytes:
+        # -n: no preview window; -t 1: shoot at once; 30 s timeout covers a busy camera.
         cmd = [
             "rpicam-still",
             "-n",
@@ -80,14 +88,34 @@ class MqttBus:
 
 
 class JsonStore:
-    """One JSON file per name in the agent's config folder (mode 600 folder)."""
+    """One JSON file per name in the agent's config folder (created mode 700 at install).
+
+    Writes are atomic (temp file then rename), so a power cut never leaves a corrupt
+    file; a corrupt file still loads as None so the agent starts on defaults.
+    """
 
     def __init__(self, folder: Path) -> None:
         self.folder = folder
 
     def load(self, name: str) -> dict | None:
         path = self.folder / f"{name}.json"
-        return json.loads(path.read_text()) if path.exists() else None
+        try:
+            data = json.loads(path.read_text())
+        except FileNotFoundError:
+            return None
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            log.warning("%s is corrupt, using defaults", path)
+            return None
+        return data if isinstance(data, dict) else None
 
     def save(self, name: str, data: dict) -> None:
-        (self.folder / f"{name}.json").write_text(json.dumps(data, ensure_ascii=False))
+        fd, tmp = tempfile.mkstemp(dir=self.folder, suffix=".tmp")  # mode 600
+        try:
+            with os.fdopen(fd, "w") as file:
+                json.dump(data, file, ensure_ascii=False)
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(tmp, self.folder / f"{name}.json")
+        except OSError:
+            Path(tmp).unlink(missing_ok=True)
+            raise

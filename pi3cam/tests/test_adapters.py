@@ -37,8 +37,11 @@ def test_capture_returns_jpeg_on_success(monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", run)
     assert RpicamCamera().capture(640, 360, 70) == b"jpeg"
-    assert "--rotation" in seen["cmd"]
-    assert "640" in seen["cmd"]
+    cmd = seen["cmd"]
+    assert cmd[cmd.index("--rotation") + 1] == "180"
+    assert cmd[cmd.index("--width") + 1] == "640"
+    assert cmd[cmd.index("--height") + 1] == "360"
+    assert cmd[cmd.index("-q") + 1] == "70"
 
 
 def test_capture_failure_returns_empty(monkeypatch):
@@ -70,3 +73,20 @@ def test_json_store_round_trip(tmp_path):
     store.save("presets", {"Entrée": [1, 2]})
     assert store.load("presets") == {"Entrée": [1, 2]}
     assert "Entrée" in (tmp_path / "presets.json").read_text()
+
+
+def test_json_store_treats_a_corrupt_file_as_missing(tmp_path):
+    (tmp_path / "state.json").write_text('{"pan": 1')
+    (tmp_path / "presets.json").write_text("[1, 2]")
+    store = JsonStore(tmp_path)
+    assert store.load("state") is None
+    assert store.load("presets") is None
+
+
+def test_json_store_save_is_atomic_and_private(tmp_path):
+    store = JsonStore(tmp_path)
+    store.save("state", {"pan": 1})
+    store.save("state", {"pan": 2})
+    assert store.load("state") == {"pan": 2}
+    assert [p.name for p in tmp_path.iterdir()] == ["state.json"]
+    assert (tmp_path / "state.json").stat().st_mode & 0o077 == 0
