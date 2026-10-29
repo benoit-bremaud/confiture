@@ -1,0 +1,27 @@
+# Script "yuki_say": ask the Yuki agent and speak its reply on the Nest Mini (ADR-0006).
+# Temporary glue until the Pi 5 satellite exists: an Assist pipeline only returns audio to
+# its caller. Paste into Home Assistant (Settings > Scripts > YAML) as script.yuki_say;
+# replace the <placeholders> with the real entity ids.
+alias: Yuki say
+mode: queued
+fields:
+  sentence:
+    description: Question or command for Yuki, in French.
+    required: true
+    selector:
+      text:
+sequence:
+  - action: conversation.process
+    data:
+      agent_id: <yuki-conversation-agent>
+      language: fr
+      text: "{{ sentence }}"
+    response_variable: reply
+  - action: tts.speak
+    target:
+      entity_id: <piper-tts-entity>
+    data:
+      media_player_entity_id: <nest-mini-media-player>
+      # Piper names languages with a region: fr_FR, not fr.
+      language: fr_FR
+      message: "{{ reply.response.speech.plain.speech }}"

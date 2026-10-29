@@ -1,0 +1,27 @@
+# Piper text-to-speech for the Yuki pipeline (ADR-0006), next to Home Assistant on the Pi 5.
+# Run from this folder on the Pi 5: docker compose -p confiture up -d
+name: confiture
+
+services:
+  piper:
+    # 2.5.2, pinned by the multi-arch index digest (docker-hardening).
+    image: rhasspy/wyoming-piper:2.5.2@sha256:7d39aafac409c2b6b09d999ed04d84c311d632e558b35baa60fad6aac722af7a
+    container_name: confiture-piper
+    restart: unless-stopped
+    # Non-root; the data folder must belong to this uid (see README.md).
+    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command:
+      - --voice
+      - ${PIPER_VOICE:-fr_FR-siwis-medium}
+      - --data-dir
+      - /data
+      - --download-dir
+      - /data
+    volumes:
+      - ./data:/data
+    # Home Assistant uses host networking: loopback only, never the LAN.
+    ports:
+      - "127.0.0.1:10200:10200"
+    # The image ships its own HEALTHCHECK (wyoming_piper.health_check).

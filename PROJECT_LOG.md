@@ -320,3 +320,17 @@
   the first PR with executable code; shellcheck and actionlint run locally meanwhile.
 - SonarQube on every local CI run (owner rule, all projects; global rule tracked in
   agents-skills#159): `sonar-project.properties` added, local scan PASSED, 0 issues.
+
+## 2026-10-28 — Brick 1: Piper text-to-speech (issue #4)
+
+- Piper (`wyoming-piper` 2.5.2, voice `fr_FR-siwis-medium`) deployed on the Pi 5 from
+  `deploy/pi5/` (owner approved the download), loopback only, healthy; Wyoming integration
+  added in Home Assistant (`tts.piper`). ADR-0006 records the three MCDA choices.
+- Blockers found and fixed: Piper wants `fr_FR`, not `fr`; Home Assistant never loaded
+  scripts (home-assistant#32); the Nest could not fetch the audio because UFW drops 8123 from
+  the LAN, so 8123 opens to the Nest only (bb-homelab#162) and `internal_url` is the Pi LAN URL.
+- The ProBook "sleep" was Ollama down: `docker.service` was socket-activated only; the owner
+  enabled it at boot.
+- Measured: answer text 2.0 s warm (16.6 s cold), the Nest starts playing at 2.2 s.
+- Gotcha: in zsh, `scp -r deploy/pi5 $HOST:confiture-pi5` reads `:c` as a history modifier and
+  copies locally; write `${HOST}:confiture-pi5`.
