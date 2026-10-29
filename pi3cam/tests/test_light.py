@@ -130,9 +130,16 @@ def test_discovery_declares_an_illuminance_sensor():
 class FakeSMBus:
     def __init__(self, block=(0, 0, 0, 0), fail=False):
         self.writes, self.reads, self.block, self.fail = [], [], list(block), fail
+        self.enable = 0x00  # power-on reset value
 
     def write_byte_data(self, addr, reg, value):
         self.writes.append((addr, reg, value))
+        if reg == 0xA0:
+            self.enable = value
+
+    def read_byte_data(self, addr, reg):
+        assert (addr, reg) == (0x29, 0xA0)
+        return self.enable
 
     def read_i2c_block_data(self, addr, reg, length):
         self.reads.append((addr, reg, length))
@@ -168,3 +175,13 @@ def test_sensor_powers_on_again_after_a_bus_error():
     assert sensor.read(1) is None
     sensor.read(1)
     assert bus.writes == [ENABLE, (0x29, 0xA1, 0x00)] * 2
+
+
+def test_sensor_recovers_from_a_silent_reset():
+    bus = FakeSMBus(block=(1, 0, 0, 0))
+    sensor = Tsl2591Sensor(bus, wait=lambda _s: None)
+    sensor.read(25)
+    sensor.read(25)
+    bus.enable = 0x00  # brown-out: ENABLE and CONTROL reset, no I²C error
+    sensor.read(25)
+    assert bus.writes == [ENABLE, (0x29, 0xA1, 0x10)] * 2

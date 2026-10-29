@@ -80,14 +80,16 @@ class Tsl2591Sensor:
     def read(self, gain: int) -> tuple[int, int] | None:
         """(full-spectrum, infrared) counts at gain, or None on an I²C error.
 
-        Blocks one integration cycle, two after a gain change. After an error the sensor
-        is powered on again at the next read, in case it was reset (brown-out).
+        Blocks one integration cycle, two after a gain change. ENABLE is checked on
+        every read: a sensor reset (brown-out) clears it without any I²C error, so the
+        sensor is then powered on and its gain set again.
         """
+        on = TSL_POWER_ON | TSL_ALS_ENABLE
         try:
-            if self.gain is None:
-                self.bus.write_byte_data(
-                    TSL_ADDR, TSL_COMMAND | TSL_ENABLE, TSL_POWER_ON | TSL_ALS_ENABLE
-                )
+            enable = self.bus.read_byte_data(TSL_ADDR, TSL_COMMAND | TSL_ENABLE)
+            if self.gain is None or enable & on != on:
+                self.gain = None  # CONTROL was reset too
+                self.bus.write_byte_data(TSL_ADDR, TSL_COMMAND | TSL_ENABLE, on)
             if gain != self.gain:
                 self.bus.write_byte_data(
                     TSL_ADDR,
