@@ -36,8 +36,11 @@ docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' confiture-piper     # true
 - `PIPER_UID` / `PIPER_GID` default to 1000 and must own `data/`.
 - Home Assistant runs with host networking, so it adds Piper with the Wyoming integration at
   `127.0.0.1:10200`; ask for language `fr_FR`, not `fr` (ADR-0006).
-- `mem_limit: 512m` only applies when the kernel has the memory cgroup: Raspberry Pi OS ships
-  it off, so Docker warns `Limitation discarded` until `cgroup_enable=memory` is added to the
-  kernel command line (a host change, not made by this repository).
+- `mem_limit: 1g` (a ~1000-character sentence peaked at ~730 MiB) needs the kernel memory
+  cgroup. The Raspberry Pi firmware adds `cgroup_disable=memory`, so append
+  `cgroup_enable=memory` to the single line of `/boot/firmware/cmdline.txt` (back it up first),
+  reboot, then recreate the container (`up -d --force-recreate piper`): a container created
+  without the cgroup keeps `HostConfig.Memory` at 0. Check with
+  `docker inspect -f '{{.HostConfig.Memory}}' confiture-piper` (1073741824).
 - Update: Dependabot proposes the new tag and digest in `compose.yaml`; review it, copy the
   files again with the `scp` line above, then `docker compose -p confiture pull` and `up -d`.

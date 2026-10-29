@@ -381,3 +381,17 @@
   inert until `cgroup_enable=memory` is set on the host; documented, host change not made.
 - `yuki_say`: `max: 3` on the queue; the header states it is the UI paste format.
 - Log references now use full `owner/repo#N`.
+
+## 2026-10-30 — Pi 5 memory cgroup for Piper (issue benoit-bremaud/confiture#14)
+
+- Kernel `6.18.50+rpt-rpi-2712`: the firmware adds `cgroup_disable=memory`. Decision (MCDA):
+  `cgroup_enable=memory` alone (475/500) over adding the legacy `cgroup_memory=1` (430);
+  appended to `/boot/firmware/cmdline.txt` (dated backup kept on the host), rebooted.
+- After the reboot the `memory` controller is listed and `docker run -m 64m` gives no warning,
+  but `confiture-piper` still had `HostConfig.Memory` 0: it must be recreated after the change.
+- Measured with a 1047-character sentence over Wyoming (~24 s of audio in 10.6 s): Piper hit
+  the 512 MiB limit 435 times and pushed 167 MiB to swap, no OOM kill; it
+  keeps ~500 MiB resident when idle. The ~200 MB estimate of benoit-bremaud/confiture#5 was wrong.
+- Decision (MCDA): `mem_limit: 1g` (440/500) over 768m (400) and keeping 512m (330). Re-measured
+  at 1g: peak 731 MiB, no swap, no limit hit, synthesis in 9.4 s; ~730 MiB resident when idle.
+- The bb-homelab repository does not document the kernel command line; no change there.
