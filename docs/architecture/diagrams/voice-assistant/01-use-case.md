@@ -39,6 +39,9 @@ flowchart LR
     subgraph Privacy ["Privacy domain"]
       UC6(["UC6 Mute the microphones"])
     end
+    subgraph Watch ["Home watch domain"]
+      UC12(["UC12 Look around remotely"])
+    end
     subgraph Admin ["Administration domain"]
       UC7(["UC7 Train a custom wake word"])
       UC8(["UC8 Enrol a node"])
@@ -61,6 +64,7 @@ flowchart LR
   Maintainer --- UC7
   Maintainer --- UC8
   Maintainer --- UC9
+  Adult --- UC12
 
   UC1 -.->|"«include»"| UC5
   UC2 -.->|"«include»"| UC5

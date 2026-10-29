@@ -16,3 +16,9 @@ user-data
 
 # Piper voice models downloaded on the Pi 5
 deploy/pi5/data/
+
+# Python
+__pycache__/
+.pytest_cache/
+.coverage
+coverage.xml
