@@ -125,3 +125,31 @@ it as a satellite or a sensor node; the system then lists it as available. NFR-4
 
 Brief: the maintainer consults the state of every node (online, temperature, under-voltage,
 storage) and identifies the one needing attention. NFR-4.
+
+## UC12 — Look around remotely   (status: iteration 1, issue #3)
+
+- **Level**: user goal
+- **Primary actor**: Adult
+- **Stakeholders & interests**: Adult — confirm or dismiss a presence alert from anywhere;
+  everyone at home — the camera can be switched off (privacy) and never streams continuously.
+- **Preconditions**: the Pi 3 camera agent is online; the Adult reaches Home Assistant (Q8).
+- **Minimal guarantee**: servos never leave their calibrated limits; no image is published while
+  the camera is switched off.
+- **Success guarantee**: the Adult sees a fresh image of where the camera points.
+- **Trigger**: an ESPectre presence alert, or the Adult's own wish (REQ-13).
+
+**Main success scenario**
+1. Adult opens the camera card in Home Assistant.
+2. System shows the latest light image (refreshed every 2 s).
+3. Adult aims the camera (pan / tilt slider, or a saved position).
+4. System moves the camera smoothly and shows a new image right after the move.
+5. Adult asks for an HD photo.
+6. System shows the HD photo.
+
+**Extensions**
+- 2a. The camera is switched off: System shows no image; Adult may switch it on (resumes at 2).
+- 2b. The agent is offline: Home Assistant shows the entities unavailable; use case ends.
+- 3a. Adult saves the current position under a name, or deletes the selected saved position.
+- 4a. The command is malformed or out of range: System ignores it, or clamps it to the limits.
+
+**Business rules / NFR**: servo safety lives in the agent (ADR-0007); NFR-4.

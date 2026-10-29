@@ -1,6 +1,6 @@
 # pi3cam — Pan-Tilt camera agent
 
-Prototype agent that lets Home Assistant look through and aim the Pi 3 camera over MQTT (issue #3).
+Agent that lets Home Assistant look through and aim the Pi 3 camera over MQTT (issue #3).
 
 ## What it does
 
@@ -16,7 +16,22 @@ Prototype agent that lets Home Assistant look through and aim the Pi 3 camera ov
 - Servo safety stays in the agent: calibrated limits, 1000 µs/s ramp, PWM cut after each move.
   The position is the last commanded one; there is no feedback.
 
-Decision: MCDA option A (one MQTT agent + snapshots, no listening port), 430/500.
+Decision: [ADR-0007](../docs/architecture/decisions/0007-pan-tilt-camera-mqtt-agent-on-the-pi3.md)
+(MQTT agent, 430/500; domain + adapters, 445/500).
+
+## Code layout
+
+- `domain.py` — pure logic: servo limits and ramp, saved positions, HA commands, Discovery.
+- `adapters.py` — PCA9685 servos (smbus2), `rpicam-still`, paho-mqtt, JSON files.
+- `main.py` — reads `~/.config/pi3cam`, wires the adapters, runs the mover thread and the
+  capture loop.
+
+## Tests
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest --cov=. --cov-report=xml:coverage.xml
+```
 
 ## Install on the Pi 3
 
@@ -25,7 +40,7 @@ a dedicated MQTT user on the hub broker.
 
 ```bash
 python3 -m venv ~/pi3cam && ~/pi3cam/bin/pip install paho-mqtt smbus2
-cp pi3cam.py run.sh ~/pi3cam/ && chmod 700 ~/pi3cam/run.sh
+cp main.py domain.py adapters.py run.sh ~/pi3cam/ && chmod 700 ~/pi3cam/run.sh
 umask 077 && mkdir -p ~/.config/pi3cam
 printf '%s\n' '<broker-ip>' > ~/.config/pi3cam/mqtt-broker
 printf '%s\n' '<mqtt-user>' > ~/.config/pi3cam/mqtt-user
@@ -35,9 +50,9 @@ read -rs PW && printf '%s\n' "$PW" > ~/.config/pi3cam/mqtt-password
 
 `run.sh` restarts the agent if it exits. Logs: `~/pi3cam/pi3cam.log`.
 
-## Known limits (prototype)
+## Known limits
 
 - Started from crontab, not systemd (no sudo when it was set up).
 - Tilt-down limit (2300 µs) is provisional; recalibrate once the Pi is mounted high.
 - The first move after a restart may jump: the real servo position is unknown.
-- The light sensor (TSL25911) is not exposed yet; no UML or tests yet (to do before the PR).
+- The light sensor (TSL25911) is not exposed yet (separate issue).

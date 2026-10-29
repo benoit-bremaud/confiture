@@ -13,6 +13,7 @@
 | UC9 | Check node health | — | — | — | — | planned |
 | UC10 | Check the weather | — | — | — | — | planned |
 | UC11 | Play music | REQ-3 → UC11, REQ-7 → UC11 | — | — | — | planned |
+| UC12 | Look around remotely | REQ-13 → UC12 | [01-sequence](diagrams/pan-tilt-camera/01-sequence-aim-and-look.md) | `pi3cam` agent | `pi3cam/tests` | iteration 1 |
 | NFR-1 | Voice stays local | ADR-0001, ADR-0005 | — | — | — | planned |
 | NFR-2 | Responsiveness | — | — | — | — | planned |
 | NFR-3 | Wake reliability | — | — | — | — | planned |
@@ -21,7 +22,7 @@
 | REQ-4 | Speaker recognition | — | — | — | — | iteration 2 |
 | REQ-10 | Voices | — | — | — | — | planned |
 | REQ-12 | Announcement speakers | — | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md) | Piper (Pi 5), `yuki_say` | manual, ADR-0006 measurements | iteration 1 |
-| REQ-13 | Remote visual check | Q8 | — | — | — | planned |
+| REQ-13 | Remote visual check | Q8 → UC12 | [ADR-0007](decisions/0007-pan-tilt-camera-mqtt-agent-on-the-pi3.md), [01-sequence](diagrams/pan-tilt-camera/01-sequence-aim-and-look.md), [02-deployment](diagrams/pan-tilt-camera/02-deployment.md) | `pi3cam` agent (Pi 3), MQTT broker | `pi3cam/tests` (52 unit), manual QA 2026-10-28 | iteration 1 |
 | REQ-16 | Answer output (Nest Mini) | REQ-12 | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md), [03-deployment](diagrams/voice-assistant/03-deployment.md) | Piper (Pi 5), `yuki_say`, Nest Mini | manual, ADR-0006 measurements | iteration 1 |
 | REQ-17 | Barge-in | UC1 *a | — | — | — | iteration 2 |
 | REQ-20 | Question log | — | — | — | — | planned |
