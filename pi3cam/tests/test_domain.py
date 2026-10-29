@@ -227,6 +227,22 @@ def test_privacy_off_during_capture_drops_the_image():
     assert all(payload != b"jpeg" for _, payload, _ in bus.messages)
 
 
+def test_privacy_off_during_hd_capture_skips_the_light_capture():
+    agent, _, _ = make_agent()
+    shots = []
+
+    class SlowCamera:
+        def capture(self, width, height, quality):
+            shots.append((width, height, quality))
+            agent.handle(f"{BASE}/privacy/set", "OFF")
+            return b"jpeg"
+
+    agent.camera = SlowCamera()
+    agent.want_hd.set()
+    agent.shoot()
+    assert shots == [HD]
+
+
 def test_privacy_rejects_other_values(agent):
     agent.handle(f"{BASE}/privacy/set", "OFF")
     agent.handle(f"{BASE}/privacy/set", "maybe")

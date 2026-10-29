@@ -359,6 +359,9 @@ class Agent:
         if self.want_hd.is_set():
             self.want_hd.clear()
             self._publish_image("camera_hd", self.camera.capture(*HD))
+        with self.lock:
+            if self.state["camera"] != "ON":  # switched off during the HD capture
+                return
         self._publish_image("camera", self.camera.capture(*LIGHT))
 
     def _publish_image(self, topic: str, image: bytes) -> None:
