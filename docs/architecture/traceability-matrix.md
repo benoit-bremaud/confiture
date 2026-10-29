@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|
 | UC1 | Ask a question | REQ-2 → UC1, REQ-9 → UC1 | [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md) | — | — | planned |
 | UC2 | Control a home device | REQ-3 → UC2, REQ-8 → UC2 | — | — | — | planned |
-| UC3 | Check a room's conditions | REQ-8 → UC3 | — | — | — | planned |
+| UC3 | Check a room's conditions | REQ-8 → UC3 | [01-sequence](diagrams/pan-tilt-camera/01-sequence-aim-and-look.md) (illuminance, #8) | `pi3cam` agent | `pi3cam/tests` | partial: Pi 3 illuminance |
 | UC4 | Set a timer or reminder | REQ-2 → UC4, REQ-3 → UC4 | — | — | — | planned |
 | UC5 | Wake the assistant | REQ-5 → UC5, REQ-6 → UC5, REQ-11 → UC5, REQ-14 → UC5, REQ-15 → UC5, REQ-18 → UC5 | — | — | — | planned |
 | UC6 | Mute the microphones | REQ-5 → UC6, REQ-19 → UC6 | — | — | — | planned |

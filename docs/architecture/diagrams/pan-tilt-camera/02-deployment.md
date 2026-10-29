@@ -20,7 +20,7 @@ flowchart LR
   subgraph PI3["«device» Raspberry Pi 3 B"]
     AGENT["«execution environment» Python venv ~/pi3cam<br/>«artifact» main.py, domain.py, adapters.py<br/>started by crontab @reboot → run.sh"]
     CONF["«artifact» ~/.config/pi3cam (mode 600)<br/>broker, MQTT user and password,<br/>state.json, presets.json"]
-    HAT["«device» Waveshare Pan-Tilt HAT<br/>PCA9685 @0x40, 2 servos"]
+    HAT["«device» Waveshare Pan-Tilt HAT<br/>PCA9685 @0x40, 2 servos,<br/>TSL25911 light sensor @0x29"]
     CAMERA["«device» Camera Module 3"]
   end
   subgraph PI5["«device» Raspberry Pi 5 (Docker)"]

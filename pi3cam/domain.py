@@ -36,6 +36,14 @@ DELETE_PREFIX = f"{TRASH} Supprimer « "
 HA_APPLY_DELAY = 0.5  # let HA apply new select options before the state
 NAME_MAX = 30
 
+# TSL25911 light sensor (confiture#8): auto-ranged gain.
+LIGHT_PERIOD = 30  # s between illuminance reports
+GAINS = (1, 25, 428)  # low, medium, high: medium first, then auto-ranged
+INTEGRATION_MS = 100  # set by the adapter (TSL_ATIME_100MS)
+SATURATED = 36863  # full count at 100 ms (datasheet)
+TOO_DARK = 100  # below this full-spectrum count, a higher gain gives better resolution
+LUX_DF = 408  # device factor of the reference lux equation
+
 DEVICE = {
     "availability_topic": f"{BASE}/status",
     "device": {
@@ -81,6 +89,12 @@ class Publisher(Protocol):
     ) -> None: ...
 
 
+class LightSensor(Protocol):
+    """Raw light reading at a gain: (full-spectrum, infrared) counts, or None on failure."""
+
+    def read(self, gain: int) -> tuple[int, int] | None: ...
+
+
 class Store(Protocol):
     """Named JSON persistence: load returns None when nothing valid was saved."""
 
@@ -114,6 +128,58 @@ def ramp(current: int, goal: int) -> list[int]:
     """Pulse widths from current to goal in STEP_US steps, goal included."""
     step = STEP_US if goal > current else -STEP_US
     return [*range(current, goal, step), goal]
+
+
+def lux(full: int, ir: int, gain: int, integration_ms: int = INTEGRATION_MS) -> float:
+    """Illuminance in lux from the two channel counts (reference TSL2591 equation)."""
+    if ir >= full:  # dark, or infrared noise above the full spectrum
+        return 0.0
+    counts_per_lux = integration_ms * gain / LUX_DF
+    return (full - ir) * (1 - ir / full) / counts_per_lux
+
+
+def next_gain(gain: int, full: int, ir: int = 0) -> int | None:
+    """Gain to retry with: lower when either channel saturates, higher when too dark; None keeps it."""
+    i = GAINS.index(gain)
+    if max(full, ir) >= SATURATED and i > 0:
+        return GAINS[i - 1]
+    if full < TOO_DARK and i < len(GAINS) - 1:
+        return GAINS[i + 1]
+    return None
+
+
+class LightMeter:
+    """Auto-ranges the light sensor and publishes the illuminance in lux."""
+
+    def __init__(self, sensor: LightSensor, bus: Publisher) -> None:
+        self.sensor, self.bus = sensor, bus
+        self.gain = GAINS[1]
+
+    def read_lux(self) -> float | None:
+        """One measurement; None when the sensor fails or saturates at the lowest gain.
+
+        At most one try per gain, so a light flickering at a threshold never loops.
+        """
+        for _ in GAINS:
+            counts = self.sensor.read(self.gain)
+            if counts is None:
+                return None
+            full, ir = counts
+            retry = next_gain(self.gain, full, ir)
+            if retry is None:
+                break
+            self.gain = retry
+        else:
+            return None  # still out of range after trying every gain
+        if max(full, ir) >= SATURATED:  # still saturated at the lowest gain
+            return None
+        return lux(full, ir, self.gain)
+
+    def report(self) -> None:
+        """Publish one reading; nothing is published when there is no valid value."""
+        value = self.read_lux()
+        if value is not None:
+            self.bus.publish(f"{BASE}/illuminance", f"{value:.1f}")
 
 
 def discovery_configs() -> dict[str, str]:
@@ -165,6 +231,14 @@ def discovery_configs() -> dict[str, str]:
             "min": 0,
             "max": NAME_MAX,
             "icon": "mdi:map-marker-plus-outline",
+        },
+        "sensor/pi3_illuminance": {
+            "name": "Luminosité",
+            "unique_id": "pi3_illuminance",
+            "state_topic": f"{BASE}/illuminance",
+            "device_class": "illuminance",
+            "unit_of_measurement": "lx",
+            "state_class": "measurement",
         },
         "switch/pi3_privacy": {
             "name": "Caméra active",
