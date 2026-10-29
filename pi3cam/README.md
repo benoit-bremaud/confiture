@@ -8,7 +8,8 @@ Agent that lets Home Assistant look through and aim the Pi 3 camera over MQTT (i
   1280×720 photo on demand (MCDA option E, 425/500). Use `camera_view: live` in the HA card:
   the default `auto` view only refreshes every 10 s.
 - Exposes through MQTT Discovery: camera, pan and tilt sliders (−100…100), an HD photo button,
-  and a privacy switch (off = no capture, no stale image in HA).
+  and a privacy switch (off = no new capture is started, an image still being captured is
+  dropped, and HA's image is blanked).
 - Saved positions, minimal UI (MCDA option A, 440/500): one `select` "Position" goes to a saved
   position; it also offers "🗑 Supprimer « name »" for the current one. One `text` field saves
   the current position under the typed name (typing the default name redefines it). Unlimited,

@@ -201,6 +201,8 @@ class Agent:
         self.want_hd = threading.Event()
         # One lock for the paho, mover and report threads that share state and presets.
         self.lock = threading.RLock()
+        self.report_lock = threading.Lock()  # one preset report at a time
+        self.report_seq = 0
         self.state: dict[str, int | str] = {"pan": 0, "tilt": 0, "camera": "ON"}
         saved = store.load("state") or {}
         for axis in AXES:
@@ -271,10 +273,22 @@ class Agent:
         Runs off the MQTT network thread, which the HA_APPLY_DELAY pause must not block.
         """
         with self.lock:
-            options, selected = self.preset_options(), self.selected
-        self.run_later(lambda: self._report_presets(options, selected))
+            self.report_seq += 1
+            seq, options, selected = (
+                self.report_seq,
+                self.preset_options(),
+                self.selected,
+            )
+        self.run_later(lambda: self._report_presets(seq, options, selected))
 
-    def _report_presets(self, options: list[str], selected: str) -> None:
+    def _report_presets(self, seq: int, options: list[str], selected: str) -> None:
+        # Reports run one at a time and a stale one gives way, so HA always ends on the
+        # latest snapshot even when commands arrive close together.
+        with self.report_lock:
+            if seq == self.report_seq:
+                self._publish_presets(options, selected)
+
+    def _publish_presets(self, options: list[str], selected: str) -> None:
         # The select's options live in its discovery config, so republish it on every change.
         self.bus.publish(
             "homeassistant/select/pi3_preset/config",

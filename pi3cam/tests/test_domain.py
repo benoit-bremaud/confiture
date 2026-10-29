@@ -278,6 +278,19 @@ def test_save_preset_under_typed_name():
     assert config["options"] == [DEFAULT, "Porte", "🗑 Supprimer « Porte »"]
 
 
+def test_stale_preset_report_gives_way_to_the_latest():
+    pending = []
+    agent, _, bus = make_agent()
+    agent.run_later = pending.append
+    agent.handle(f"{BASE}/preset_name/set", "Porte")
+    agent.handle(f"{BASE}/preset/set", "🗑 Supprimer « Porte »")
+    for report in reversed(pending):  # the newer report runs first, the older last
+        report()
+    config = json.loads(bus.last("homeassistant/select/pi3_preset/config"))
+    assert config["options"] == [DEFAULT]
+    assert bus.last(f"{BASE}/preset/state") == DEFAULT
+
+
 def test_preset_name_is_truncated(agent):
     agent.handle(f"{BASE}/preset_name/set", "x" * 50)
     assert list(agent.presets) == [DEFAULT, "x" * 30]
