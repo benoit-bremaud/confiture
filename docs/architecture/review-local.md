@@ -4,7 +4,7 @@
 - Commit: ade7a67
 - Scope: branch diff origin/main...HEAD (pi3cam/, docs/architecture/)
 - Checks run: design · docs · tests · security · correctness
-- Verdict: Must and Should fixed; ship after the owner hardware QA  ·  Must 5 · Should 6 · Nice 5
+- Verdict: Must and Should fixed; ship  ·  Must 5 · Should 6 · Nice 5
 
 ## Pre-merge gate (after fixes, working tree on top of ade7a67)
 | Step | Result |
@@ -13,8 +13,8 @@
 | 2 Coverage | tests 91 % lines+branches overall; domain.py 99 %, adapters.py 95 %; SonarQube new code 98.5 % (main.py wiring excluded) · docs 28/28 public symbols (100 %; Protocol and adapter methods documented at class level, nested closures excluded) |
 | 3 SonarQube | ✅ PASSED (S1192 fixed with topic constants) |
 | 4 Secrets | ✅ gitleaks clean (origin/main..HEAD + staged) · no tracked .env · diff read: no IP, MAC, name or key |
-| 5 QA pass | ⚠️ not run here: the product runs on the Pi 3 hardware; last manual QA 2026-10-28 on the prototype; owner hardware smoke after deploy |
-- Gate: **GREEN except step 5 (hardware QA, owner waiver needed)**
+| 5 QA pass | ✅ hardware smoke on the Pi 3, 2026-10-29: new agent deployed (prototype backed up), 19/19 MQTT checks — online, light and HD images, pan/tilt to both limits, 500 clamped to 100, `inf` and invalid UTF-8 ignored with the agent alive, save / go to / delete a preset, privacy OFF blanks the image and ON restores it, recentre; no error in the agent log |
+- Gate: **GREEN once the PR reviews are handled**
 
 ## Resolution
 All Must and Should items below are fixed in the follow-up commit, except where marked Nice or Disagree.
