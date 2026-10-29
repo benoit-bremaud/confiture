@@ -130,10 +130,18 @@ def ramp(current: int, goal: int) -> list[int]:
     return [*range(current, goal, step), goal]
 
 
-def lux(full: int, ir: int, gain: int, integration_ms: int = INTEGRATION_MS) -> float:
-    """Illuminance in lux from the two channel counts (reference TSL2591 equation)."""
-    if ir >= full:  # dark, or infrared noise above the full spectrum
+def lux(
+    full: int, ir: int, gain: int, integration_ms: int = INTEGRATION_MS
+) -> float | None:
+    """Illuminance in lux from the two channel counts (reference TSL2591 equation).
+
+    None when infrared reaches the full spectrum (IR-dominant source): the equation
+    has no valid answer, and 0 lx would falsely report darkness (confiture#11).
+    """
+    if full == 0:  # true darkness
         return 0.0
+    if ir >= full:
+        return None
     counts_per_lux = integration_ms * gain / LUX_DF
     return (full - ir) * (1 - ir / full) / counts_per_lux
 
@@ -156,7 +164,8 @@ class LightMeter:
         self.gain = GAINS[1]
 
     def read_lux(self) -> float | None:
-        """One measurement; None when the sensor fails or saturates at the lowest gain.
+        """One measurement; None when the sensor fails, saturates at the lowest gain or
+        reads an infrared-dominant source.
 
         At most one try per gain, so a light flickering at a threshold never loops.
         """

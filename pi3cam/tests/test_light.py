@@ -39,9 +39,13 @@ def test_lux_scales_inversely_with_gain():
     assert lux(1000, 200, 1) == pytest.approx(25 * lux(1000, 200, 25))
 
 
-def test_lux_is_zero_in_the_dark_and_never_negative():
+def test_lux_is_zero_in_the_dark():
     assert lux(0, 0, 428) == 0.0
-    assert lux(100, 150, 25) == 0.0  # infrared above full spectrum (noise)
+
+
+@pytest.mark.parametrize("full, ir", [(100, 150), (100, 100)])
+def test_lux_rejects_an_infrared_dominant_reading(full, ir):
+    assert lux(full, ir, 25) is None  # not darkness: HA keeps the last valid value
 
 
 @pytest.mark.parametrize(
@@ -112,6 +116,18 @@ def test_meter_keeps_the_new_gain_when_the_retry_fails():
     assert meter.read_lux() is None
     meter.read_lux()
     assert sensor.gains == [25, 1, 1]
+
+
+def test_meter_publishes_zero_in_true_darkness():
+    bus = FakeBus()
+    LightMeter(FakeSensor((0, 0), (0, 0)), bus).report()
+    assert bus.published == [("confiture/pi3/illuminance", "0.0", False)]
+
+
+def test_meter_publishes_nothing_under_an_infrared_dominant_source():
+    bus = FakeBus()
+    LightMeter(FakeSensor((5000, 6000)), bus).report()
+    assert bus.published == []
 
 
 def test_meter_publishes_nothing_on_sensor_failure():
