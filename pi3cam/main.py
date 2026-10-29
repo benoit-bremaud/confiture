@@ -13,8 +13,8 @@ from typing import Callable
 import paho.mqtt.client as mqtt
 from smbus2 import SMBus
 
-from adapters import JsonStore, MqttBus, Pca9685Servos, RpicamCamera
-from domain import BASE, INTERVAL, SUBSCRIPTIONS, Agent
+from adapters import JsonStore, MqttBus, Pca9685Servos, RpicamCamera, Tsl2591Sensor
+from domain import BASE, INTERVAL, LIGHT_PERIOD, SUBSCRIPTIONS, Agent, LightMeter
 
 # Local, never committed (mode 600): broker host, MQTT user, MQTT password — one per file.
 CONF = Path.home() / ".config/pi3cam"
@@ -47,6 +47,9 @@ def main() -> None:
         sleep=time.sleep,
         run_later=run_in_thread,
     )
+    # Own bus handle: smbus2 keeps the slave address per handle, so two threads
+    # sharing one could talk to the wrong chip.
+    light = LightMeter(Tsl2591Sensor(SMBus(1)), MqttBus(client))
 
     def on_connect(c, *_):
         agent.on_connect()
@@ -73,7 +76,16 @@ def main() -> None:
             except Exception:
                 log.exception("move failed")
 
+    def light_loop():
+        while True:
+            try:
+                light.report()
+            except Exception:
+                log.exception("light reading failed")
+            time.sleep(LIGHT_PERIOD)
+
     run_in_thread(mover)
+    run_in_thread(light_loop)
     while True:
         agent.shoot()
         agent.wait_for_shot(INTERVAL)

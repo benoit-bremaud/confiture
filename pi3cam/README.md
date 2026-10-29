@@ -14,6 +14,10 @@ Agent that lets Home Assistant look through and aim the Pi 3 camera over MQTT (i
   position; it also offers "🗑 Supprimer « name »" for the current one. One `text` field saves
   the current position under the typed name (typing the default name redefines it). Unlimited,
   stored in `~/.config/pi3cam/presets.json` on the Pi.
+- Illuminance (issue #8): the HAT's TSL25911 light sensor, published in lux every 30 s on
+  `confiture/pi3/illuminance` (`sensor`, `device_class: illuminance`). The gain is
+  auto-ranged (1×, 25×, 428×, MCDA option B, 450/500); a saturated or failed reading is
+  skipped.
 - Servo safety stays in the agent: calibrated limits, 1000 µs/s ramp, PWM cut after each move.
   The position is the last commanded one; there is no feedback.
 
@@ -22,8 +26,9 @@ Decision: [ADR-0007](../docs/architecture/decisions/0007-pan-tilt-camera-mqtt-ag
 
 ## Code layout
 
-- `domain.py` — pure logic: servo limits and ramp, saved positions, HA commands, Discovery.
-- `adapters.py` — PCA9685 servos (smbus2), `rpicam-still`, paho-mqtt, JSON files.
+- `domain.py` — pure logic: servo limits and ramp, saved positions, HA commands, Discovery,
+  lux conversion and auto-gain.
+- `adapters.py` — PCA9685 servos and TSL25911 light sensor (smbus2), `rpicam-still`, paho-mqtt, JSON files.
 - `main.py` — reads `~/.config/pi3cam`, wires the adapters, runs the mover thread and the
   capture loop.
 
@@ -56,4 +61,4 @@ read -rs PW && printf '%s\n' "$PW" > ~/.config/pi3cam/mqtt-password
 - Started from crontab, not systemd (no sudo when it was set up).
 - Tilt-down limit (2300 µs) is provisional; recalibrate once the Pi is mounted high.
 - The first move after a restart may jump: the real servo position is unknown.
-- The light sensor (TSL25911) is not exposed yet (separate issue).
+- Very bright direct sunlight (above ~88 000 lx) saturates the sensor: no value then.

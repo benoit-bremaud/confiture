@@ -354,3 +354,18 @@
 - Gotchas: the Pi 3 user is not the laptop user (`ssh <user>@pitest.lan`); it does not answer
   ping, so test SSH, not ping; `pkill -f "<pattern>"` over SSH kills the SSH command itself,
   so use a `[p]attern`.
+
+## 2026-10-29 — Brick 3: TSL25911 illuminance sensor (issue #8)
+
+- The Pan-Tilt HAT light sensor (I²C 0x29, ID 0x50) is now an HA `sensor` (lux) on
+  `confiture/pi3/illuminance`, published every 30 s; UC3 partly realised (traceability matrix).
+- Decision (MCDA): auto-gain 1×/25×/428× in the domain (450/500) over fixed medium gain (430)
+  and fixed low gain (375): the camera may face a window, where 25× saturates near 6000 lx.
+- Design: a separate `LightMeter` domain class (the `Agent` stays unchanged); the lux equation
+  and gain choice are pure functions; a reading saturated at 1×, failed, or flickering across
+  gains is not published. The sensor gets its own `SMBus` handle: smbus2 keeps the slave
+  address per handle, so the mover and light threads must not share one.
+- Unit tests caught a sign bug: infrared above full spectrum gave a positive lux.
+- Hardware check on the Pi 3 (evening, room light): 30.7 lx at 25×, 31.1 lx at 428× on the same
+  scene, 34 lx at 1× (coarse at low light, as expected); HA Discovery config and states seen
+  on the broker. Previous agent files backed up in `~/pi3cam-backup/pre-8/`.

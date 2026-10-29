@@ -24,6 +24,7 @@ sequenceDiagram
   participant AG as pi3cam Agent (Pi 3)<br/>domain
   participant SV as Pca9685Servos
   participant CAM as RpicamCamera
+  participant LS as Tsl2591Sensor
 
   Note over AG,MQ: on (re)connect: status online, Discovery configs, states (retained)
   loop every 2 s, or at once when shoot_now is set
@@ -35,6 +36,15 @@ sequenceDiagram
       AG-)MQ: confiture/pi3/camera and camera_hd (empty)
     end
     MQ-)HA: image
+  end
+  loop every 30 s (issue #8)
+    AG->>LS: read(gain)
+    LS-->>AG: ch0, ch1 counts
+    alt saturated or too dark
+      AG->>AG: next gain (1×, 25×, 428×), read again
+    end
+    AG-)MQ: confiture/pi3/illuminance "123.4" (lux)
+    MQ-)HA: sensor state
   end
   Adult->>HA: move pan slider (or pick a saved position)
   HA-)MQ: confiture/pi3/pan/set "35"
@@ -63,3 +73,5 @@ sequenceDiagram
 - `-)` marks asynchronous MQTT publishes; there is no reply on the command path, the state
   topic is the acknowledgement.
 - Position is commanded, not measured (no servo feedback).
+- Illuminance (UC3, issue #8): the domain picks the gain and converts counts to lux; a reading
+  still saturated at the lowest gain, or failed, is not published.
