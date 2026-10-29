@@ -7,7 +7,9 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
+from typing import Callable
 
 import paho.mqtt.client as mqtt
 from smbus2 import SMBus
@@ -15,7 +17,10 @@ from smbus2 import SMBus
 log = logging.getLogger(__name__)
 
 PCA_ADDR = 0x40
-PERIOD_US = 20000  # 50 Hz, prescale 121 already set on the chip
+PERIOD_US = 20000  # 50 Hz servo frame
+MODE1, PRESCALE = 0x00, 0xFE
+SLEEP, AUTO_INCREMENT, RESTART = 0x10, 0x20, 0x80  # MODE1 bits
+PRESCALE_50HZ = 121  # round(25 MHz / (4096 × 50 Hz)) − 1
 LED0_ON_L = 0x06  # first channel register; 4 registers per channel
 FULL_OFF = 0x10  # bit 4 of LEDn_OFF_H
 
@@ -23,12 +28,17 @@ FULL_OFF = 0x10  # bit 4 of LEDn_OFF_H
 class Pca9685Servos:
     """Waveshare Pan-Tilt HAT servos through the PCA9685 PWM chip on I²C bus 1.
 
-    Assumes the chip already runs at 50 Hz (prescale 121, set once during the HAT setup);
-    this class never writes MODE1 or PRESCALE.
+    The chip forgets its prescale on power loss, so every start sets 50 Hz (prescale is
+    writable only while asleep) and enables register auto-increment for block writes.
     """
 
-    def __init__(self, bus: SMBus) -> None:
+    def __init__(self, bus: SMBus, wait: Callable[[float], None] = time.sleep) -> None:
         self.bus = bus
+        bus.write_byte_data(PCA_ADDR, MODE1, SLEEP)
+        bus.write_byte_data(PCA_ADDR, PRESCALE, PRESCALE_50HZ)
+        bus.write_byte_data(PCA_ADDR, MODE1, AUTO_INCREMENT)
+        wait(0.0005)  # oscillator start-up (datasheet: 500 µs)
+        bus.write_byte_data(PCA_ADDR, MODE1, AUTO_INCREMENT | RESTART)
 
     def write_pulse(self, channel: int, us: int) -> None:
         off = round(us * 4096 / PERIOD_US)

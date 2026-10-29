@@ -11,20 +11,39 @@ from adapters import JsonStore, MqttBus, Pca9685Servos, RpicamCamera
 class FakeSMBus:
     def __init__(self):
         self.writes = []
+        self.bytes = []
 
     def write_i2c_block_data(self, addr, reg, data):
         self.writes.append((addr, reg, data))
 
+    def write_byte_data(self, addr, reg, value):
+        self.bytes.append((addr, reg, value))
+
+
+def servos(bus):
+    return Pca9685Servos(bus, wait=lambda _s: None)
+
+
+def test_start_sets_50hz_while_asleep_then_wakes_with_auto_increment():
+    bus = FakeSMBus()
+    servos(bus)
+    assert bus.bytes == [
+        (0x40, 0x00, 0x10),  # MODE1: sleep (prescale writable only while asleep)
+        (0x40, 0xFE, 121),  # PRESCALE: 50 Hz
+        (0x40, 0x00, 0x20),  # MODE1: wake, auto-increment
+        (0x40, 0x00, 0xA0),  # MODE1: restart PWM, auto-increment
+    ]
+
 
 def test_pulse_register_and_bytes():
     bus = FakeSMBus()
-    Pca9685Servos(bus).write_pulse(1, 1500)  # 1500 µs of 20 ms -> 307 ticks of 4096
+    servos(bus).write_pulse(1, 1500)  # 1500 µs of 20 ms -> 307 ticks of 4096
     assert bus.writes == [(0x40, 0x0A, [0, 0, 307 & 0xFF, 307 >> 8])]
 
 
 def test_cut_sets_full_off():
     bus = FakeSMBus()
-    Pca9685Servos(bus).cut(0)
+    servos(bus).cut(0)
     assert bus.writes == [(0x40, 0x06, [0, 0, 0, 0x10])]
 
 

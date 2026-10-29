@@ -149,6 +149,21 @@ def test_move_from_an_offset_ramps_from_the_last_position():
     assert all(abs(b - a) <= STEP_US for a, b in zip(pulses, pulses[1:]))
 
 
+def test_failed_move_still_cuts_the_signal_and_keeps_the_state():
+    agent, servos, _ = make_agent()
+
+    def broken_write(channel, us):
+        servos.calls.append(("pulse", channel, us))
+        if len(servos.calls) == 3:
+            raise OSError("I2C error")
+
+    servos.write_pulse = broken_write
+    with pytest.raises(OSError):
+        agent.move("pan", 50)
+    assert servos.calls[-1] == ("cut", AXES["pan"]["channel"])
+    assert agent.state["pan"] == 0
+
+
 @pytest.mark.parametrize("axis", ["pan", "tilt"])
 @pytest.mark.parametrize("target,end", [(500, "plus"), (-500, "minus")])
 def test_move_beyond_limits_is_clamped(axis, target, end):

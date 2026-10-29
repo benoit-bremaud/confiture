@@ -215,13 +215,18 @@ class Agent:
         self.selected = DEFAULT
 
     def move(self, axis: str, target: float) -> None:
-        """Ramp to target, hold, then cut the PWM signal (no position feedback)."""
+        """Ramp to target, hold, then cut the PWM signal (no position feedback).
+
+        The signal is cut even if the move fails, so a stalled servo never keeps a pulse.
+        """
         channel = AXES[axis]["channel"]
-        for us in ramp(pulse_for(axis, self.state[axis]), pulse_for(axis, target)):
-            self.servos.write_pulse(channel, us)
-            self.sleep(STEP_DELAY)
-        self.sleep(SETTLE)
-        self.servos.cut(channel)
+        try:
+            for us in ramp(pulse_for(axis, self.state[axis]), pulse_for(axis, target)):
+                self.servos.write_pulse(channel, us)
+                self.sleep(STEP_DELAY)
+            self.sleep(SETTLE)
+        finally:
+            self.servos.cut(channel)
         self.state[axis] = clamp(target)
 
     def next_move(self) -> None:
