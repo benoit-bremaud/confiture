@@ -395,3 +395,13 @@
 - Decision (MCDA): `mem_limit: 1g` (440/500) over 768m (400) and keeping 512m (330). Re-measured
   at 1g: peak 731 MiB, no swap, no limit hit, synthesis in 9.4 s; ~730 MiB resident when idle.
 - The bb-homelab repository does not document the kernel command line; no change there.
+
+## 2026-10-30 — Infrared-dominant light readings skipped (benoit-bremaud/confiture#11)
+
+- `lux()` returned 0.0 whenever infrared reached the full-spectrum count, so an IR-dominant
+  source (halogen, sunlight through some glazing) showed as darkness in Home Assistant.
+- Decision (MCDA): `lux()` returns `None` for `ir >= full > 0` (485/500) over a guard in
+  `LightMeter.read_lux` (355/500); `LightMeter` already publishes nothing on `None`, so HA keeps
+  the last valid value. True darkness (`full == 0`) still reports 0 lx.
+- Unit tests: true dark publishes `0.0`; IR above full publishes nothing. pi3cam suite 101 passed,
+  `domain.py` 100 % covered. Not checked on the Pi 3 (no IR source at hand).
