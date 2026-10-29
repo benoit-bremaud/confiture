@@ -12,6 +12,12 @@ services:
     user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    # Read-only root; Piper writes only the voice (data volume) and /tmp.
+    read_only: true
+    tmpfs: [/tmp]
+    # Bounds Piper next to Home Assistant (a medium voice: ~200 MB, estimated). Docker ignores it
+    # until the Pi kernel enables the memory cgroup (see README.md).
+    mem_limit: 512m
     command:
       - --voice
       - ${PIPER_VOICE:-fr_FR-siwis-medium}

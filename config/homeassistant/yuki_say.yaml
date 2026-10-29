@@ -1,9 +1,13 @@
 # Script "yuki_say": ask the Yuki agent and speak its reply on the Nest Mini (ADR-0006).
 # Temporary glue until the Pi 5 satellite exists: an Assist pipeline only returns audio to
-# its caller. Paste into Home Assistant (Settings > Scripts > YAML) as script.yuki_say;
-# replace the <placeholders> with the real entity ids.
+# its caller. UI paste format, not scripts.yaml as is: paste it into Home Assistant
+# (Settings > Scripts > YAML) as script.yuki_say; replace the <placeholders> with the real
+# entity ids. In scripts.yaml it would need a top-level "yuki_say:" key and indenting.
 alias: Yuki say
 mode: queued
+# At most 3 runs (1 speaking, 2 waiting); further calls are dropped with a log warning.
+max: 3
+max_exceeded: warning
 fields:
   sentence:
     description: Question or command for Yuki, in French.
