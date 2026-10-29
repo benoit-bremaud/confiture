@@ -334,3 +334,23 @@
 - Measured: answer text 2.0 s warm (16.6 s cold), the Nest starts playing at 2.2 s.
 - Gotcha: in zsh, `scp -r deploy/pi5 $HOST:confiture-pi5` reads `:c` as a history modifier and
   copies locally; write `${HOST}:confiture-pi5`.
+
+## 2026-10-29 — Brick 2: Pan-Tilt camera agent (issue #3, PR #7)
+
+- The Pi 3 agent was split into a pure domain and adapters (ADR-0007, MCDA 445/500 vs single
+  file 335 and full hexagonal 345); UC12, aim-and-look sequence and deployment diagrams added.
+- Scope decisions (owner, MCDA): the "recentre" button is the "Position par défaut" saved
+  position; the TSL25911 light sensor moved to #8.
+- review-local found two inputs that killed the MQTT thread (`inf`, invalid UTF-8), a
+  corrupt-JSON restart loop and unlocked shared state; all fixed. Codex then found four real
+  hardware and privacy issues: the PCA9685 forgets its 50 Hz prescale on power loss, a failed
+  move left the PWM on, a crashed move's pulse resumed at restart, and a capture finishing after
+  "camera off" was still published; all fixed. One remaining window (a capture starting
+  microseconds after OFF) is accepted: its image is dropped, see the README.
+- Deployed on the Pi 3 (prototype backed up in `~/pi3cam-backup/`); hardware smoke 19/19 over
+  MQTT after each fix. 72 unit tests, SonarQube gate passed, merged as 8d9fda4.
+- Merged without a staging tier, under the owner's waiver until staging exists in every
+  project.
+- Gotchas: the Pi 3 user is not the laptop user (`ssh <user>@pitest.lan`); it does not answer
+  ping, so test SSH, not ping; `pkill -f "<pattern>"` over SSH kills the SSH command itself,
+  so use a `[p]attern`.
