@@ -29,6 +29,7 @@ def test_start_sets_50hz_while_asleep_then_wakes_with_auto_increment():
     servos(bus)
     assert bus.bytes == [
         (0x40, 0x00, 0x10),  # MODE1: sleep (prescale writable only while asleep)
+        (0x40, 0xFD, 0x10),  # ALL_LED_OFF_H: cut every channel left by a crash
         (0x40, 0xFE, 121),  # PRESCALE: 50 Hz
         (0x40, 0x00, 0x20),  # MODE1: wake, auto-increment
         (0x40, 0x00, 0xA0),  # MODE1: restart PWM, auto-increment

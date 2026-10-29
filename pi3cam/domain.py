@@ -358,7 +358,12 @@ class Agent:
             return
         if self.want_hd.is_set():
             self.want_hd.clear()
-            if image := self.camera.capture(*HD):
-                self.bus.publish(f"{BASE}/camera_hd", image)
-        if image := self.camera.capture(*LIGHT):
-            self.bus.publish(f"{BASE}/camera", image)
+            self._publish_image("camera_hd", self.camera.capture(*HD))
+        self._publish_image("camera", self.camera.capture(*LIGHT))
+
+    def _publish_image(self, topic: str, image: bytes) -> None:
+        # A capture can take seconds: recheck privacy under the lock, so an image taken
+        # before "camera off" is never published after it.
+        with self.lock:
+            if image and self.state["camera"] == "ON":
+                self.bus.publish(f"{BASE}/{topic}", image)
