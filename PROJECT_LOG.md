@@ -485,3 +485,11 @@
   child experience 40, NFR-5 25, simplicity 20, ProBook-off robustness 15): give up at 30 s and
   shorter answers, `num_predict` 160 → 100 and "une ou deux phrases" (425/500) over 30 s only
   (380) and shorter answers only (360). `yuki` rebuilt on the ProBook (`yuki-bak-25` kept).
+- HA agent "Yuki" instructions updated through the reconfigure dialog ("une ou deux phrases").
+  Final spoken test: "pourquoi le ciel est bleu ?" cue then answer at 13.4 s (approximate
+  physics: "absorbed" instead of scattered, the 3B limit). A first try lost "Pourquoi": the
+  microphone opens about 2 s after the wake word, and the wake sound plays on the speakerless
+  Pi 5, so nothing tells the member when to speak (follow-up: GPIO LED on the Pi 5).
+- ProBook cleanup (owner, MCDA): removed `~/ollama-install.log`, Docker build cache (0.77 GB),
+  APT cache (sudo by the owner) and `yuki-bak-25`; disk 36 % → 34 %. Kept: orphan volumes,
+  snaps, `~/.cache` and every non-confiture file.
