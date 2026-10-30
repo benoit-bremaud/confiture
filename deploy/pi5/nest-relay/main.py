@@ -5,11 +5,12 @@ import http.client
 import json
 import logging
 import os
+import time
 import urllib.request
 
 import websockets
 
-from relay import Speaker, relay
+from relay import Speaker, Turn
 
 log = logging.getLogger("nestrelay")
 
@@ -36,19 +37,32 @@ class HomeAssistantSpeaker:
             log.info("spoken (%s): %d characters", response.status, len(text))
 
 
+TICK_S = 0.25
+
+
+def speak_all(texts: list[str], speaker: Speaker) -> None:
+    """Speak each text in order; HA down drops this text and keeps the relay alive."""
+    for text in texts:
+        try:
+            speaker.speak(text)
+        except (OSError, http.client.HTTPException) as error:
+            log.warning("Home Assistant call failed: %s", error)
+
+
 async def run(satellite_uri: str, speaker: Speaker) -> None:
     """Relay every reply of the satellite forever, reconnecting when it goes away."""
+    turn = Turn()
     async for ws in websockets.connect(satellite_uri):  # reconnects with backoff
         try:
             log.info("connected to %s", satellite_uri)
-            async for message in ws:
+            while True:
                 try:
-                    await asyncio.to_thread(relay, str(message), speaker)
-                except (
-                    OSError,
-                    http.client.HTTPException,
-                ) as error:  # HA down: drop this reply, keep listening
-                    log.warning("Home Assistant call failed: %s", error)
+                    message = await asyncio.wait_for(ws.recv(), TICK_S)
+                    texts = turn.on_message(str(message), time.monotonic())
+                except TimeoutError:
+                    texts = turn.tick(time.monotonic())
+                if texts:
+                    await asyncio.to_thread(speak_all, texts, speaker)
         except websockets.ConnectionClosed:
             log.warning("satellite connection closed, reconnecting")
 

@@ -463,3 +463,20 @@
   Long-lived token `confiture-nest-relay` (HA gives 10 years, no expiry choice: rotate yearly).
 - Spoken end to end: "Okay Nabu", "Quelle heure est-il ?" transcribed in 0.36 s, answer on the
   Nest. Pending: the young-child bench (#23, child available Sunday), then ADR-0008 accepted; this PR merges on the adult bench and #23 closes #18. Review fixes: child ratio over the full set, numbers and elisions normalised, non-admin relay token, satellite bounded at 256m (~100 MiB measured). Follow-up #21: Hadolint and Trivy image scan in CI.
+
+## 2026-10-30 — Free questions: thinking cue and friendly fallback (benoit-bremaud/confiture#25)
+
+- Finding: the LLM path already answered by voice (agent "Yuki" on Ollama `yuki`, ProBook, since
+  2026-10-28); missing were the NFR-5 thinking cue and the ADR-0004 friendly answer when the
+  ProBook is down. Scope (MCDA): cue and fallback in `nest-relay` (400/500) over verify-only
+  (320) and sentence streaming to the Nest (330).
+- UML first: `05-sequence-thinking-cue-and-fallback.md`, validated by the owner (2 s cue
+  "Hmm, je réfléchis…", 15 s or `pipeline_error` → "Je n'arrive pas à réfléchir pour
+  l'instant, réessaie un peu plus tard.", late reply dropped).
+- `nest-relay`: pure `Turn` state machine (injected clock, 11 tests, 100 % of `relay.py`);
+  the loop ticks every 0.25 s. Deployed on the Pi 5 (backup in `~/nest-relay-bak-25`).
+- Spoken tests: "quelle heure est-il ?" local, no cue; "pourquoi le ciel est bleu ?" cue at
+  2.0 s, answer on the Nest at 11.9 s (factually wrong: "ozone", the 3B limit, ADR-0004);
+  Ollama stopped: fallback in 0.1 s; Ollama restarted and `yuki` reloaded.
+- Found: the satellite ignores the wake word for about 60 s after each reply (mpv fails with
+  no speaker) — benoit-bremaud/confiture#26.
