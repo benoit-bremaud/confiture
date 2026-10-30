@@ -1,4 +1,5 @@
-# Piper text-to-speech for the Yuki pipeline (ADR-0006), next to Home Assistant on the Pi 5.
+# Voice services for the Yuki pipeline next to Home Assistant on the Pi 5: Piper text-to-speech
+# (ADR-0006), speech-to-text and the microphone satellite (ADR-0008).
 # Run from this folder on the Pi 5: docker compose -p confiture up -d
 name: confiture
 
@@ -9,7 +10,7 @@ services:
     container_name: confiture-piper
     restart: unless-stopped
     # Non-root; the data folder must belong to this uid (see README.md).
-    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     # Read-only root; Piper writes only the voice (data volume) and /tmp.
@@ -31,3 +32,92 @@ services:
     ports:
       - "127.0.0.1:10200:10200"
     # The image ships its own HEALTHCHECK (wyoming_piper.health_check).
+
+  whisper:
+    # Speech-to-text for the Yuki pipeline (Wyoming; sherpa-onnx or faster-whisper backends) (#18).
+    # 3.8.1, pinned by the multi-arch index digest (docker-hardening).
+    image: rhasspy/wyoming-whisper:3.8.1@sha256:ba6fcb6056ebe237d15a325381763a80af2fc8fcedaa04f6a714a7375eb20d80
+    container_name: confiture-whisper
+    restart: unless-stopped
+    # Non-root; the whisper folder must belong to this uid (see README.md).
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: [/tmp]
+    # Parakeet sits at ~1.4 GiB once loaded (Kroko ~210 MiB), measured on the Pi 5 (ADR-0008).
+    mem_limit: 2g
+    # Backend chosen by the bench (ADR-0008): Parakeet TDT v3 by default; set
+    # WYO_WHISPER_SHERPA_STREAMING=1 in .env for Kroko. Always pinned: the image's "auto"
+    # picks a backend on its own.
+    environment:
+      WYO_WHISPER_STT_LIBRARY: ${STT_LIBRARY:-sherpa}
+      WYO_WHISPER_SHERPA_STREAMING: ${STT_STREAMING:-0}
+    command:
+      - --language
+      - fr
+      - --data-dir
+      - /data
+      - --download-dir
+      - /data
+    volumes:
+      - ./whisper:/data
+    # Home Assistant uses host networking: loopback only, never the LAN.
+    ports:
+      - "127.0.0.1:10300:10300"
+
+  satellite:
+    # Linux Voice Assistant: streams the USB microphone to Home Assistant (ESPHome API).
+    # 1.1.18, pinned by the multi-arch index digest (docker-hardening).
+    image: ghcr.io/ohf-voice/linux-voice-assistant:1.1.18@sha256:089f321a4e7408c61fbcd1ec691eb073961be022d651139f32b0dbead9b2af58
+    container_name: confiture-satellite
+    restart: unless-stopped
+    # Runs as the owner of the PipeWire session it talks to (see README.md).
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
+    group_add: [audio]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: [/tmp]
+    # ~100 MiB measured on the Pi 5 after spoken turns (2026-10-30); bound with headroom.
+    mem_limit: 256m
+    environment:
+      CLIENT_NAME: yuki_living_room
+      HOST: 0.0.0.0
+      # Fixed, locally administered: the bridge MAC changes on every recreate, and Home
+      # Assistant would then see a new device.
+      MAC_ADDRESS: ${SATELLITE_MAC:?set SATELLITE_MAC in .env (see .env.example)}
+      XDG_RUNTIME_DIR: /run/user/${PI5_UID:-1000}
+      PULSE_SERVER: /run/user/${PI5_UID:-1000}/pulse/native
+    volumes:
+      - ./satellite/configuration:/app/configuration
+      - ./satellite/local:/app/local
+      - /run/user/${PI5_UID:-1000}/pulse:/run/user/${PI5_UID:-1000}/pulse
+    # Home Assistant adds it by hand at 127.0.0.1:6053 (no mDNS through the bridge).
+    ports:
+      - "127.0.0.1:6053:6053"
+      # Peripheral events (tts_text) for nest-relay; it has no authentication: loopback only.
+      - "127.0.0.1:6055:6055"
+    # The image ships its own HEALTHCHECK.
+
+  nest-relay:
+    # Speaks the satellite's replies on the Nest Mini through script.yuki_speak (#18).
+    build: ./nest-relay
+    image: confiture-nest-relay:local
+    container_name: confiture-nest-relay
+    restart: unless-stopped
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 128m
+    # Client only, listens on nothing: host networking reaches the loopback ports of the
+    # satellite (6055) and Home Assistant (8123).
+    network_mode: host
+    environment:
+      SATELLITE_URI: ws://127.0.0.1:6055
+      HA_URL: http://127.0.0.1:8123
+      # Long-lived token "confiture-nest-relay", in .env only.
+      HA_TOKEN: ${NEST_RELAY_HA_TOKEN:?set NEST_RELAY_HA_TOKEN in .env (see .env.example)}
+    depends_on: [satellite]

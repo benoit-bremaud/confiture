@@ -2,7 +2,7 @@
 
 | ID | Name | Source | Realisation | Components | Tests | Status |
 |---|---|---|---|---|---|---|
-| UC1 | Ask a question | REQ-2 → UC1, REQ-9 → UC1 | [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md) | — | — | planned |
+| UC1 | Ask a question | REQ-2 → UC1, REQ-9 → UC1 | [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md), [04-sequence](diagrams/voice-assistant/04-sequence-ask-by-voice.md), [ADR-0008](decisions/0008-speech-to-text-on-the-pi5-chosen-by-bench.md) | STT + satellite + `nest-relay` (Pi 5), `yuki_speak` | `sttbench/tests`, `deploy/pi5/nest-relay/tests`, adult bench + spoken end-to-end 2026-10-30 | partial: adult voice |
 | UC2 | Control a home device | REQ-3 → UC2, REQ-8 → UC2 | — | — | — | planned |
 | UC3 | Check a room's conditions | REQ-8 → UC3 | [01-sequence](diagrams/pan-tilt-camera/01-sequence-aim-and-look.md) (illuminance, #8) | `pi3cam` agent | `pi3cam/tests` | partial: Pi 3 illuminance |
 | UC4 | Set a timer or reminder | REQ-2 → UC4, REQ-3 → UC4 | — | — | — | planned |
@@ -23,7 +23,7 @@
 | REQ-10 | Voices | — | — | — | — | planned |
 | REQ-12 | Announcement speakers | — | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md) | Piper (Pi 5), `yuki_say` | manual, ADR-0006 measurements | iteration 1 |
 | REQ-13 | Remote visual check | Q8 → UC12 | [ADR-0007](decisions/0007-pan-tilt-camera-mqtt-agent-on-the-pi3.md), [01-sequence](diagrams/pan-tilt-camera/01-sequence-aim-and-look.md), [02-deployment](diagrams/pan-tilt-camera/02-deployment.md) | `pi3cam` agent (Pi 3), MQTT broker | `pi3cam/tests` (52 unit), manual QA 2026-10-28 | iteration 1 |
-| REQ-16 | Answer output (Nest Mini) | REQ-12 | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md), [03-deployment](diagrams/voice-assistant/03-deployment.md) | Piper (Pi 5), `yuki_say`, Nest Mini | manual, ADR-0006 measurements | iteration 1 |
+| REQ-16 | Answer output (Nest Mini) | REQ-12 | [ADR-0006](decisions/0006-piper-tts-on-the-pi5-speaking-on-the-nest.md), [02-sequence](diagrams/voice-assistant/02-sequence-ask-a-question.md), [03-deployment](diagrams/voice-assistant/03-deployment.md) | Piper (Pi 5), `yuki_say`, `yuki_speak` + `nest-relay`, Nest Mini | manual, ADR-0006 measurements | iteration 1 |
 | REQ-17 | Barge-in | UC1 *a | — | — | — | iteration 2 |
 | REQ-20 | Question log | — | — | — | — | planned |
 

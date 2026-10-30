@@ -442,3 +442,24 @@
 - Installed on the Pi 5: timer enabled (next run Sunday 04:00), first manual run `freed 0 MiB`
   (card pruned by hand that morning), 13 images all in use, 0 B reclaimable, unused volumes
   untouched, disk at 80 %. The Home Assistant automation is added through the UI.
+
+## 2026-10-30 — Speech-to-text and the microphone satellite on the Pi 5 (benoit-bremaud/confiture#18)
+
+- UML first: `04-sequence-ask-by-voice.md` validated by the owner. Satellite (MCDA): the
+  Wyoming satellite is archived upstream, so Linux Voice Assistant (420/500) over the archived
+  satellite (360) and a bench-only scope (360); runs as uid 1000 on a PipeWire user session
+  (installed on the Pi 5, linger on, WirePlumber seat monitoring off for the headless host).
+- Adult bench (10 sentences, webcam microphone, `sttbench/`): faster-whisper tiny/base/small
+  WER 55/40/22 %, latency up to 6.5/10.9/5.7 s, so none meets #18. The same Wyoming image's
+  sherpa backend: Parakeet TDT v3 9.0 % at 0.8 s, Kroko FR streaming 4.5 % at 0.7 s. A first
+  pass with 6 s windows cut sentences short (the microphone takes ~2 s to open): 8 s windows.
+- Web review (Open ASR Leaderboard, 2026 roundups, Wyoming projects): no other French model
+  fits a Pi 5 CPU. Decision (MCDA, ADR-0008, proposed): Parakeet by default, Kroko one setting
+  away, the young-child bench decides (435/500) over Parakeet only (425) and Kroko only (365).
+- Pi 5 disk hit 99 % during the bench (dangling images); pruned to 80 %, and the weekly
+  housekeeping shipped in benoit-bremaud/confiture#20.
+- Answers on the Nest (MCDA): `nest-relay` reads the satellite's `tts_text` events and runs
+  `script.yuki_speak` (410/500) over an any-sentence HA automation (375) and deferring (350).
+  Long-lived token `confiture-nest-relay` (HA gives 10 years, no expiry choice: rotate yearly).
+- Spoken end to end: "Okay Nabu", "Quelle heure est-il ?" transcribed in 0.36 s, answer on the
+  Nest. Pending: the young-child bench (#23, child available Sunday), then ADR-0008 accepted; this PR merges on the adult bench and #23 closes #18. Review fixes: child ratio over the full set, numbers and elisions normalised, non-admin relay token, satellite bounded at 256m (~100 MiB measured). Follow-up #21: Hadolint and Trivy image scan in CI.

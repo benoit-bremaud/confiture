@@ -1,0 +1,11 @@
+tests/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage.xml
+.env*
+*.pem
+*.key
+.ruff_cache/
+requirements-dev.txt

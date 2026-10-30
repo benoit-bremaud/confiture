@@ -14,8 +14,17 @@ user-data
 *.local.md
 .scannerwork/
 
-# Piper voice models downloaded on the Pi 5
+# Models and state downloaded on the Pi 5
 deploy/pi5/data/
+deploy/pi5/whisper/
+deploy/pi5/satellite/
+
+# Speech-to-text bench recordings: family voices, never in the repository
+stt-bench/
+*.wav
+*.flac
+*.ogg
+*.mp3
 
 # Python
 __pycache__/
