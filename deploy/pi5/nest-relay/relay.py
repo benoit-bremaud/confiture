@@ -14,7 +14,9 @@ from typing import Protocol
 THINKING_CUE = "Hmm, je réfléchis…"
 FALLBACK = "Je n'arrive pas à réfléchir pour l'instant, réessaie un peu plus tard."
 CUE_AFTER_S = 2.0
-GIVE_UP_AFTER_S = 15.0
+# Above NFR-5's 15 s on purpose: a slow but working LLM must not be cut off (#25);
+# a stopped Ollama ends the run with pipeline_error at once.
+GIVE_UP_AFTER_S = 30.0
 
 
 class Speaker(Protocol):

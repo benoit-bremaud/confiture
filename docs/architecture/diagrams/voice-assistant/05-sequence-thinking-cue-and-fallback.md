@@ -14,7 +14,9 @@ the member that Yuki heard. When the ProBook is off, Home Assistant ends the run
 error and the Nest stays silent. `nest-relay` watches the satellite's events and, in French:
 
 - speaks a short thinking cue when no reply arrives within 2 s of the `thinking` event (NFR-5);
-- speaks a friendly fallback when the run fails or no reply arrives within 15 s (ADR-0004).
+- speaks a friendly fallback when the run fails or no reply arrives within 30 s (ADR-0004). The
+  limit sits above NFR-5's 15 s so that a slow but working LLM is not cut off: a 16.8 s answer
+  was lost with 15 s (owner choice, MCDA 425); answers are kept short instead (`num_predict 100`).
 
 `script.yuki_speak` runs in `queued` mode, so a reply that follows the cue plays after it.
 
@@ -33,7 +35,7 @@ sequenceDiagram
 
   Member->>Sat: wake word, question
   Sat-->>Relay: thinking event (intent started)
-  Note over Relay: start the turn: cue at 2 s, give up at 15 s
+  Note over Relay: start the turn: cue at 2 s, give up at 30 s
   alt reply within 2 s (known command, fast answer)
     Sat-->>Relay: tts_text(reply)
     Relay->>HA: script.yuki_speak(reply)
@@ -41,11 +43,11 @@ sequenceDiagram
   else no reply after 2 s (LLM thinking)
     Relay->>HA: script.yuki_speak("Hmm, je réfléchis…")
     HA->>Nest: spoken cue
-    alt reply within 15 s
+    alt reply within 30 s
       Sat-->>Relay: tts_text(reply)
       Relay->>HA: script.yuki_speak(reply) (queued after the cue)
       HA->>Nest: spoken reply
-    else pipeline_error, or no reply after 15 s (ProBook down)
+    else pipeline_error, or no reply after 30 s (ProBook down)
       Relay->>HA: script.yuki_speak(fallback)
       HA->>Nest: "Je n'arrive pas à réfléchir pour l'instant, réessaie un peu plus tard."
       Note over Relay: turn closed: a late reply is dropped

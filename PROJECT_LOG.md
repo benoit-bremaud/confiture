@@ -480,3 +480,8 @@
   Ollama stopped: fallback in 0.1 s; Ollama restarted and `yuki` reloaded.
 - Found: the satellite ignores the wake word for about 60 s after each reply (mpv fails with
   no speaker) — benoit-bremaud/confiture#26.
+- Retest after the review fixes: a long answer took 16.8 s (first token 3.7 s with the conversation
+  history), so the 15 s limit spoke the fallback and dropped a valid answer. Owner choice (MCDA,
+  child experience 40, NFR-5 25, simplicity 20, ProBook-off robustness 15): give up at 30 s and
+  shorter answers, `num_predict` 160 → 100 and "une ou deux phrases" (425/500) over 30 s only
+  (380) and shorter answers only (360). `yuki` rebuilt on the ProBook (`yuki-bak-25` kept).

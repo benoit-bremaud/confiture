@@ -98,7 +98,7 @@ def test_malformed_and_other_events_are_ignored():
 def test_late_tick_jumps_straight_to_the_fallback():
     turn = Turn()
     turn.on_message(event("thinking"), 0.0)
-    assert turn.tick(20.0) == [FALLBACK]
+    assert turn.tick(GIVE_UP_AFTER_S + 5) == [FALLBACK]
 
 
 def test_pipeline_error_after_the_cue_speaks_the_fallback():
