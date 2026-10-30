@@ -68,6 +68,9 @@ acceptance on this hardware, and the Wyoming image, port and pipeline wiring are
 
 ## Consequences
 
+- Spoken end to end on 2026-10-30: wake word "Okay Nabu" on the satellite, "Quelle heure
+  est-il ?" transcribed 0.36 s after the end of speech, answer spoken on the Nest through
+  `nest-relay` and `script.yuki_speak` (the pipeline returns audio to the satellite only).
 - Audio never leaves the Pi 5 and is never stored by the pipeline (REQ-20).
 - Parakeet costs ~1.4 GiB of RAM next to Home Assistant; Kroko would free most of it.
 - Kroko community models are CC-BY-SA with no published accuracy; prefer Parakeet on a tie.

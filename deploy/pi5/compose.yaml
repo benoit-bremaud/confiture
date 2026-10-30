@@ -96,4 +96,28 @@ services:
     # Home Assistant adds it by hand at 127.0.0.1:6053 (no mDNS through the bridge).
     ports:
       - "127.0.0.1:6053:6053"
+      # Peripheral events (tts_text) for nest-relay; it has no authentication: loopback only.
+      - "127.0.0.1:6055:6055"
     # The image ships its own HEALTHCHECK.
+
+  nest-relay:
+    # Speaks the satellite's replies on the Nest Mini through script.yuki_speak (#18).
+    build: ./nest-relay
+    image: confiture-nest-relay:local
+    container_name: confiture-nest-relay
+    restart: unless-stopped
+    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 128m
+    # Client only, listens on nothing: host networking reaches the loopback ports of the
+    # satellite (6055) and Home Assistant (8123).
+    network_mode: host
+    environment:
+      SATELLITE_URI: ws://127.0.0.1:6055
+      HA_URL: http://127.0.0.1:8123
+      # Long-lived token "confiture-nest-relay", in .env only.
+      HA_TOKEN: ${NEST_RELAY_HA_TOKEN:?set NEST_RELAY_HA_TOKEN in .env (see .env.example)}
+    depends_on: [satellite]

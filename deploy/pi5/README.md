@@ -81,3 +81,22 @@ docker compose -p confiture logs -f whisper satellite
   satellite with the ESPHome integration at `127.0.0.1:6053` (no mDNS through the Docker
   bridge). `SATELLITE_MAC` keeps its identity across recreates.
 - The Pi 5 has no speaker: answers are spoken on the Nest Mini (REQ-16).
+
+## Answers on the Nest Mini (nest-relay)
+
+An Assist pipeline returns its audio to the satellite, and the Pi 5 has no speaker.
+`nest-relay` listens to the satellite's peripheral events on `127.0.0.1:6055` and, for each
+`tts_text` reply, runs the Home Assistant script `yuki_speak`
+(`config/homeassistant/yuki_speak.yaml`), which speaks it on the Nest with Piper.
+
+- Token: create a long-lived access token named `confiture-nest-relay` (Profile > Security),
+  then put it in `.env` without echoing it:
+  `read -rs T && echo "NEST_RELAY_HA_TOKEN=$T" >> .env`. Home Assistant gives it 10 years
+  and no expiry choice: rotate it yearly (create the new token, update `.env`, recreate the
+  container, revoke the old one).
+- Copy `nest-relay/` next to `compose.yaml` (`scp deploy/pi5/nest-relay/{Dockerfile,.dockerignore,requirements.txt,relay.py,main.py}`), then
+  `docker compose -p confiture build nest-relay && docker compose -p confiture up -d nest-relay`.
+- Check: `docker logs confiture-nest-relay` shows `connected to ws://127.0.0.1:6055`, and
+  `spoken (200)` after each answer.
+- Host networking: the relay listens on nothing and reaches the loopback ports of the
+  satellite and Home Assistant.
