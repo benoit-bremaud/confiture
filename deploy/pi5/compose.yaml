@@ -79,8 +79,8 @@ services:
     security_opt: ["no-new-privileges:true"]
     read_only: true
     tmpfs: [/tmp]
-    # TODO(#18): set from the measured peak.
-    mem_limit: 512m
+    # ~100 MiB measured on the Pi 5 after spoken turns (2026-10-30); bound with headroom.
+    mem_limit: 256m
     environment:
       CLIENT_NAME: yuki_living_room
       HOST: 0.0.0.0
