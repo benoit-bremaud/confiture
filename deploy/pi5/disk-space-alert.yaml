@@ -1,0 +1,32 @@
+# Home Assistant automation: warn before the Pi 5 SD card fills up again.
+# Needs the System Monitor integration with its "/" disk usage sensor; the entity id below is
+# the usual default, adjust it in the two triggers if yours differs. The notify block is
+# commented out because its service is a placeholder: uncomment it with your service (companion
+# app, Telegram, ...), the persistent notification alone still shows on the dashboard.
+alias: Pi 5 disk space alert
+description: Warn at 85 % and again at 95 % disk use on the Pi 5 root filesystem
+mode: single
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.system_monitor_disk_usage
+    above: 85
+    for:
+      minutes: 10
+    id: warning
+  - trigger: numeric_state
+    entity_id: sensor.system_monitor_disk_usage
+    above: 95
+    id: critical
+actions:
+  - action: persistent_notification.create
+    data:
+      # One id per level: a late "warning" must not overwrite an earlier "critical".
+      notification_id: "pi5_disk_space_{{ trigger.id }}"
+      title: "Pi 5 disk space {{ trigger.id }}"
+      message: >-
+        {{ trigger.to_state.state }} % used on /.
+        Run `sudo systemctl start docker-housekeeping.service`, then check `docker system df`.
+  # - action: notify.<notify_service>
+  #   data:
+  #     title: "Pi 5 disk space {{ trigger.id }}"
+  #     message: "{{ trigger.to_state.state }} % used on /"
