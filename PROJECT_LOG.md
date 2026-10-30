@@ -493,3 +493,19 @@
 - ProBook cleanup (owner, MCDA): removed `~/ollama-install.log`, Docker build cache (0.77 GB),
   APT cache (sudo by the owner) and `yuki-bak-25`; disk 36 % → 34 %. Kept: orphan volumes,
   snaps, `~/.cache` and every non-confiture file.
+
+## 2026-10-30 — Satellite hears again right after a reply (#26)
+
+- Root cause, not the missing speaker: ufw on the Pi 5 drops bridge-to-host traffic, so the
+  satellite container could not fetch Home Assistant's TTS URL; mpv waited ~60 s, failed, and the
+  pipeline stayed active with the wake word ignored. Local sounds already played on PipeWire's
+  null sink (`auto_null`).
+- Owner choice (MCDA, root cause 30, security 25, simplicity 20, nest-relay 10, reversibility 15):
+  satellite on `network_mode: host` with `HOST` and `PERIPHERAL_HOST` on 127.0.0.1 (475/500)
+  over a ufw allow rule from the bridge subnet (375: host config outside the repo, opens HA to
+  every bridge container) and a patched LVA skipping local TTS (300).
+- Deployed and spoken test: reply played locally in 3-5 s, next "Okay Nabu" detected 6 s after;
+  nest-relay spoke both answers; `ss` shows 6053/6055 on 127.0.0.1 only. One earlier run
+  (long LLM answer, TTS stream opened before the intent ended) stayed in "playing" without an
+  error; not reproduced, to watch.
+- The 3B model answered that bananas are orange (ADR-0004, GPU host).
