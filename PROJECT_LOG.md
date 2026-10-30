@@ -462,4 +462,4 @@
   `script.yuki_speak` (410/500) over an any-sentence HA automation (375) and deferring (350).
   Long-lived token `confiture-nest-relay` (HA gives 10 years, no expiry choice: rotate yearly).
 - Spoken end to end: "Okay Nabu", "Quelle heure est-il ?" transcribed in 0.36 s, answer on the
-  Nest. Pending: the young-child bench, then ADR-0008 accepted.
+  Nest. Pending: the young-child bench (#23, child available Sunday), then ADR-0008 accepted; this PR merges on the adult bench and #23 closes #18. Review fixes: child ratio over the full set, numbers and elisions normalised, non-admin relay token, satellite bounded at 256m (~100 MiB measured). Follow-up #21: Hadolint and Trivy image scan in CI.

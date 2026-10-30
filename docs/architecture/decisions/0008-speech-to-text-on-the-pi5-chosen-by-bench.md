@@ -1,6 +1,6 @@
 # ADR-0008 — Speech-to-text on the Pi 5, model chosen by a recorded bench
 
-- **Status**: proposed (owner, 2026-10-30): adult bench done, young-child bench pending
+- **Status**: proposed (owner, 2026-10-30): adult bench done, young-child bench pending (#23)
 - **Date**: 2026-10-30
 - **Deciders**: owner
 - **Resolves**: benoit-bremaud/confiture#18; realises REQ-15 for iteration 1
