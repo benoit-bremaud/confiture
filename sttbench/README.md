@@ -2,8 +2,9 @@
 
 Chooses the speech-to-text model for the Yuki pipeline (benoit-bremaud/confiture#18,
 ADR-0008): 20 French sentences, 10 by the young child and 10 by an adult, recorded with the
-USB webcam microphone on the Pi 5 at real living-room distance. The smallest model with at
-least 8/10 correct child transcriptions and an STT latency of 3 s or less wins.
+USB webcam microphone on the Pi 5 at real living-room distance. A model passes with at least
+8/10 correct child transcriptions (over the full set of 10) and an STT latency of 3 s or
+less; ADR-0008 records the choice.
 
 Recordings are family voices: they stay in `~/stt-bench/` on the Pi 5, never here.
 

@@ -1,6 +1,7 @@
 """Wiring: satellite peripheral WebSocket in, Home Assistant REST out."""
 
 import asyncio
+import http.client
 import json
 import logging
 import os
@@ -8,7 +9,7 @@ import urllib.request
 
 import websockets
 
-from relay import relay
+from relay import Speaker, relay
 
 log = logging.getLogger("nestrelay")
 
@@ -21,6 +22,7 @@ class HomeAssistantSpeaker:
         self._token = token
 
     def speak(self, text: str) -> None:
+        """POST the text to the script; raises OSError or HTTPException when HA fails."""
         request = urllib.request.Request(
             self._url,
             data=json.dumps({"text": text}).encode(),
@@ -34,14 +36,18 @@ class HomeAssistantSpeaker:
             log.info("spoken (%s): %d characters", response.status, len(text))
 
 
-async def run(satellite_uri: str, speaker: HomeAssistantSpeaker) -> None:
+async def run(satellite_uri: str, speaker: Speaker) -> None:
+    """Relay every reply of the satellite forever, reconnecting when it goes away."""
     async for ws in websockets.connect(satellite_uri):  # reconnects with backoff
         try:
             log.info("connected to %s", satellite_uri)
             async for message in ws:
                 try:
                     await asyncio.to_thread(relay, str(message), speaker)
-                except OSError as error:  # HA down: drop this reply, keep listening
+                except (
+                    OSError,
+                    http.client.HTTPException,
+                ) as error:  # HA down: drop this reply, keep listening
                     log.warning("Home Assistant call failed: %s", error)
         except websockets.ConnectionClosed:
             log.warning("satellite connection closed, reconnecting")

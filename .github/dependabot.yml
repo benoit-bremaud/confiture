@@ -1,9 +1,15 @@
 version: 2
 updates:
-  # Piper image (tag and digest) in the Pi 5 compose project. Compose bumps are not
+  # Piper, whisper and satellite images (tag and digest) in the Pi 5 compose project. Compose bumps are not
   # scanned for CVEs in CI: review them by hand, then redeploy (deploy/pi5/README.md).
   - package-ecosystem: docker-compose
     directory: /deploy/pi5
+    schedule:
+      interval: weekly
+
+  # Base image of the locally built nest-relay.
+  - package-ecosystem: docker
+    directory: /deploy/pi5/nest-relay
     schedule:
       interval: weekly
 

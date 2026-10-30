@@ -33,7 +33,8 @@ docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' confiture-piper     # true
 - Settings: copy `.env.example` to `.env` next to `compose.yaml` only to change a default.
 - `PIPER_VOICE` sets the default voice (`fr_FR-siwis-medium` if unset); Piper downloads it into
   `data/` on first start. Extra voices: copy their `.onnx` and `.onnx.json` into `data/`.
-- `PIPER_UID` / `PIPER_GID` default to 1000 and must own `data/`.
+- `PI5_UID` / `PI5_GID` (formerly `PIPER_UID` / `PIPER_GID`) default to 1000: every service runs
+  as this user, which owns `data/`, `whisper/`, `satellite/` and the PipeWire session.
 - Home Assistant runs with host networking, so it adds Piper with the Wyoming integration at
   `127.0.0.1:10200`; ask for language `fr_FR`, not `fr` (ADR-0006).
 - `mem_limit: 1g` (a ~1000-character sentence peaked at ~730 MiB) needs the kernel memory
@@ -83,8 +84,6 @@ Alert: in Home Assistant, add the System Monitor integration (Settings → Integ
 `disk-space-alert.yaml`, check the sensor entity id (default `sensor.system_monitor_disk_usage`)
 and uncomment the notify block with your service (the file keeps a placeholder only).
 
-  files again with the `scp` line above, then `docker compose -p confiture pull` and `up -d`.
-
 ## Speech-to-text and the microphone satellite
 
 `whisper` (Wyoming, sherpa-onnx backend) turns speech into text for the Yuki pipeline (benoit-bremaud/confiture#18, ADR-0008);
@@ -129,8 +128,10 @@ An Assist pipeline returns its audio to the satellite, and the Pi 5 has no speak
 `tts_text` reply, runs the Home Assistant script `yuki_speak`
 (`config/homeassistant/yuki_speak.yaml`), which speaks it on the Nest with Piper.
 
-- Token: create a long-lived access token named `confiture-nest-relay` (Profile > Security),
-  then put it in `.env` without echoing it:
+- Token: a long-lived token carries every right of its user, so create it on a dedicated
+  non-admin, local-only user (Settings > People, e.g. `nest-relay`), not on the owner. Signed in
+  as that user, create a token named `confiture-nest-relay` (Profile > Security), then put it in
+  `.env` without echoing it, and `chmod 600 .env`:
   `read -rs T && echo "NEST_RELAY_HA_TOKEN=$T" >> .env`. Home Assistant gives it 10 years
   and no expiry choice: rotate it yearly (create the new token, update `.env`, recreate the
   container, revoke the old one).

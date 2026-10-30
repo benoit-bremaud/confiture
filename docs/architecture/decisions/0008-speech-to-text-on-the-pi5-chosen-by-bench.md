@@ -74,3 +74,6 @@ acceptance on this hardware, and the Wyoming image, port and pipeline wiring are
 - Audio never leaves the Pi 5 and is never stored by the pipeline (REQ-20).
 - Parakeet costs ~1.4 GiB of RAM next to Home Assistant; Kroko would free most of it.
 - Kroko community models are CC-BY-SA with no published accuracy; prefer Parakeet on a tie.
+- Accepted residual risk: the satellite's peripheral WebSocket (`:6055`) has no authentication.
+  It is bound to loopback, so only a process on the Pi 5 can read the reply texts or make the
+  Nest speak; the relay's Home Assistant token belongs to a non-admin user.

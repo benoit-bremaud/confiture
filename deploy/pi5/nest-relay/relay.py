@@ -10,6 +10,8 @@ from typing import Protocol
 
 
 class Speaker(Protocol):
+    """Port: anything that can speak a reply (Home Assistant in production, a fake in tests)."""
+
     def speak(self, text: str) -> None: ...
 
 
@@ -23,7 +25,9 @@ def reply_text(message: str) -> str | None:
         return None
     data = event.get("data")
     text = data.get("text") if isinstance(data, dict) else None
-    return text.strip() or None if isinstance(text, str) else None
+    if not isinstance(text, str):
+        return None
+    return text.strip() or None
 
 
 def relay(message: str, speaker: Speaker) -> bool:

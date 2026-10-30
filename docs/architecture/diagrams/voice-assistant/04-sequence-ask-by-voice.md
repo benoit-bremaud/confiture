@@ -9,14 +9,15 @@
 
 Adds the listening half to UC1: a spoken question, captured by the USB microphone on the Pi 5
 (REQ-15), is turned into text by a Wyoming speech-to-text container on the Pi 5 (ADR-0008), then
-follows the exchange of `02-sequence-ask-a-question.md` unchanged. The wake word is a later
-brick: until then a listening turn is started by hand (one turn, then the satellite waits).
+follows the exchange of `02-sequence-ask-a-question.md` unchanged. The wake word ("Okay Nabu"
+for now) is detected on the satellite. An Assist pipeline returns its audio to the satellite,
+which has no speaker, so `nest-relay` picks up the reply text and has it spoken on the Nest.
 
 ## Diagram
 
 ```mermaid
 ---
-title: sd — UC1 Ask a question by voice — STT on the Pi 5, answer on the Nest
+title: sd — UC1 Ask a question by voice — STT on the Pi 5, answer on the Nest via nest-relay
 ---
 sequenceDiagram
   actor Member as Household member
@@ -24,10 +25,11 @@ sequenceDiagram
   participant HA as Home Assistant (Pi 5)<br/>Assist pipeline "Yuki"
   participant STT as Speech-to-text (Pi 5)<br/>Wyoming, loopback
   participant Agent as Conversation agent "Yuki"
+  participant Relay as nest-relay (Pi 5)
   participant Piper as Piper TTS (Pi 5)
   participant Nest as Nest Mini (Cast)
 
-  Member->>Sat: start a listening turn (by hand, until the wake word)
+  Member->>Sat: wake word
   Sat->>HA: run pipeline (stage stt → tts)
   loop while the member speaks
     Member->>Sat: speech
@@ -43,7 +45,10 @@ sequenceDiagram
     HA->>Agent: conversation.process(transcript)
     Note over Agent: ref 02-sequence-ask-a-question — intents first, LLM fallback
     Agent-->>HA: reply text
-    HA->>Piper: synthesize(reply text)
+    HA-->>Sat: tts-end (reply text)
+    Sat-->>Relay: tts_text event (WebSocket, loopback :6055)
+    Relay->>HA: script.yuki_speak(text) (REST, token)
+    HA->>Piper: tts.speak → synthesize(text)
     Piper-->>HA: audio (WAV)
     HA->>Nest: play_media(TTS URL on HA)
     Nest-->>Member: spoken answer

@@ -22,6 +22,9 @@ deploy/pi5/satellite/
 # Speech-to-text bench recordings: family voices, never in the repository
 stt-bench/
 *.wav
+*.flac
+*.ogg
+*.mp3
 
 # Python
 __pycache__/

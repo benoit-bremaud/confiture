@@ -10,7 +10,7 @@ services:
     container_name: confiture-piper
     restart: unless-stopped
     # Non-root; the data folder must belong to this uid (see README.md).
-    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     # Read-only root; Piper writes only the voice (data volume) and /tmp.
@@ -40,7 +40,7 @@ services:
     container_name: confiture-whisper
     restart: unless-stopped
     # Non-root; the whisper folder must belong to this uid (see README.md).
-    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     read_only: true
@@ -73,7 +73,7 @@ services:
     container_name: confiture-satellite
     restart: unless-stopped
     # Runs as the owner of the PipeWire session it talks to (see README.md).
-    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
     group_add: [audio]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -87,12 +87,12 @@ services:
       # Fixed, locally administered: the bridge MAC changes on every recreate, and Home
       # Assistant would then see a new device.
       MAC_ADDRESS: ${SATELLITE_MAC:?set SATELLITE_MAC in .env (see .env.example)}
-      XDG_RUNTIME_DIR: /run/user/${PIPER_UID:-1000}
-      PULSE_SERVER: /run/user/${PIPER_UID:-1000}/pulse/native
+      XDG_RUNTIME_DIR: /run/user/${PI5_UID:-1000}
+      PULSE_SERVER: /run/user/${PI5_UID:-1000}/pulse/native
     volumes:
       - ./satellite/configuration:/app/configuration
       - ./satellite/local:/app/local
-      - /run/user/${PIPER_UID:-1000}/pulse:/run/user/${PIPER_UID:-1000}/pulse
+      - /run/user/${PI5_UID:-1000}/pulse:/run/user/${PI5_UID:-1000}/pulse
     # Home Assistant adds it by hand at 127.0.0.1:6053 (no mDNS through the bridge).
     ports:
       - "127.0.0.1:6053:6053"
@@ -106,7 +106,7 @@ services:
     image: confiture-nest-relay:local
     container_name: confiture-nest-relay
     restart: unless-stopped
-    user: "${PIPER_UID:-1000}:${PIPER_GID:-1000}"
+    user: "${PI5_UID:-1000}:${PI5_GID:-1000}"
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     read_only: true

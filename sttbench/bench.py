@@ -46,10 +46,14 @@ async def transcribe(uri: str, path: Path) -> tuple[str, float]:
 
 
 async def run(folder: Path, uri: str) -> list[Result]:
+    """Transcribe every recorded sentence of sentences.tsv; missing files are listed, not run."""
     results = []
     for line in (folder / "sentences.tsv").read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
         name, reference = line.split("\t", 1)
         if not (folder / name).exists():  # a speaker not recorded yet
+            print(f"{name}\tmissing")
             continue
         text, latency = await transcribe(uri, folder / name)
         results.append(Result(name.split("-", 1)[0], reference, text, latency))

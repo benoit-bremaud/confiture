@@ -10,12 +10,23 @@ from dataclasses import dataclass
 # Acceptance of #18: at least 8/10 correct child transcriptions, STT latency of 3 s or less.
 MIN_CHILD_CORRECT_RATIO = 0.8
 MAX_LATENCY_S = 3.0
+# The ratio is taken over the whole child set, so a half-recorded bench cannot pass.
+CHILD_SENTENCES = 10
+
+# Models write small numbers either way ("sept" or "7"); compare words, not spellings.
+NUMBERS = dict(
+    enumerate(
+        "zéro un deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze "
+        "quinze seize dix-sept dix-huit dix-neuf vingt".split()
+    )
+)
 
 
 def normalize(text: str) -> list[str]:
-    """Lower-case words without punctuation, so "Quelle heure est-il ?" == "quelle heure est il"."""
-    text = unicodedata.normalize("NFC", text).lower().replace("’", "'")
-    return re.findall(r"[\w']+", text.replace("-", " "))
+    """Lower-case words without punctuation, elisions split and numbers 0-20 spelt out."""
+    text = unicodedata.normalize("NFC", text).lower()
+    text = re.sub(r"\d+", lambda m: NUMBERS.get(int(m[0]), m[0]), text)
+    return re.findall(r"\w+", re.sub(r"[-'’]", " ", text))
 
 
 def word_errors(reference: str, hypothesis: str) -> tuple[int, int]:
@@ -34,6 +45,8 @@ def word_errors(reference: str, hypothesis: str) -> tuple[int, int]:
 
 @dataclass(frozen=True)
 class Result:
+    """One transcribed sentence; correct means no word error after normalisation."""
+
     speaker: str  # "adult" or "child"
     reference: str
     transcript: str
@@ -46,6 +59,8 @@ class Result:
 
 @dataclass(frozen=True)
 class Summary:
+    """Bench outcome of one model; child_correct_ratio is over CHILD_SENTENCES, 0.0 if none."""
+
     wer: float
     child_correct_ratio: float
     max_latency_s: float
@@ -59,6 +74,7 @@ class Summary:
 
 
 def summarize(results: list[Result]) -> Summary:
+    """Corpus WER (summed errors over summed reference words), child ratio, worst latency."""
     errors = total = 0
     for result in results:
         e, n = word_errors(result.reference, result.transcript)
@@ -66,13 +82,7 @@ def summarize(results: list[Result]) -> Summary:
     child = [r for r in results if r.speaker == "child"]
     return Summary(
         wer=errors / total if total else 0.0,
-        child_correct_ratio=sum(r.correct for r in child) / len(child)
-        if child
-        else 0.0,
+        child_correct_ratio=sum(r.correct for r in child)
+        / max(len(child), CHILD_SENTENCES),
         max_latency_s=max((r.latency_s for r in results), default=0.0),
     )
-
-
-def smallest_passing(summaries: dict[str, Summary], order: list[str]) -> str | None:
-    """The first model of `order` (smallest first) that passes, or None."""
-    return next((m for m in order if m in summaries and summaries[m].passes), None)
