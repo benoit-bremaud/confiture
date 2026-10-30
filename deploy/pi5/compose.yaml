@@ -88,7 +88,8 @@ services:
     environment:
       CLIENT_NAME: yuki_living_room
       # Loopback only: the ESPHome API (6053) and the peripheral events (6055) have no
-      # authentication; Home Assistant and nest-relay run on this host.
+      # authentication; Home Assistant and nest-relay run on this host. Any local process can
+      # reach them. Check after every image bump: `ss -ltn` shows 6053/6055 on 127.0.0.1 only.
       HOST: 127.0.0.1
       PERIPHERAL_HOST: 127.0.0.1
       # Fixed, locally administered: Home Assistant keys the device on it.

@@ -118,7 +118,8 @@ docker compose -p confiture logs -f whisper satellite
   `systemctl --user restart wireplumber`; `pactl list short sources` shows `alsa_input.usb-…`.
 - Home Assistant adds `whisper` with the Wyoming integration at `127.0.0.1:10300`, and the
   satellite with the ESPHome integration at `127.0.0.1:6053` (it listens on loopback only,
-  host networking, #26). `SATELLITE_MAC` keeps its identity across recreates.
+  host networking, #26; after an image bump, `ss -ltn | grep -E ':605[35]'` must show
+  `127.0.0.1` only). `SATELLITE_MAC` keeps its identity across recreates.
 - The Pi 5 has no speaker: answers are spoken on the Nest Mini (REQ-16).
 
 ## Answers on the Nest Mini (nest-relay)
