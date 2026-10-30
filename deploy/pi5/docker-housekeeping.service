@@ -1,3 +1,5 @@
+# Run by docker-housekeeping.timer, or by hand. Root on purpose: it needs the Docker socket.
+# Installed in /etc/systemd/system/, the script in /usr/local/bin/ (deploy/pi5/README.md).
 [Unit]
 Description=Prune unused Docker images and build cache
 Requires=docker.service
@@ -6,3 +8,5 @@ After=docker.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/docker-housekeeping.sh
+# A oneshot has no start timeout: do not let a hung Docker daemon keep the job open.
+TimeoutStartSec=30min

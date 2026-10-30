@@ -1,50 +1,45 @@
-# Local review — confiture (feat/8-tsl25911-illuminance-sensor)
+# Local review — confiture (chore/19-pi5-disk-housekeeping)
 
-Pre-push review of issue #8, the TSL25911 illuminance sensor; all Must and Should findings were fixed on the branch.
+Pre-push review of issue #19, Pi 5 disk housekeeping; every Should finding was fixed on the branch in the commit after the review.
 
-- Date: 2026-10-29
-- Commit: see the PR head (review run on c95672b, fixes in the next commit)
-- Scope: branch diff main...HEAD
-- Checks run: design · docs · tests · security · correctness
-- Verdict: ship (after fixes) · Must 1 (fixed) · Should 9 (fixed) · Nice 4
+- Date: 2026-10-30
+- Commit: eed13a1 (review run), fixes in the next commit
+- Scope: branch diff main...HEAD (6 files: `deploy/pi5/docker-housekeeping.{sh,service,timer}`, `deploy/pi5/disk-space-alert.yaml`, `deploy/pi5/README.md`, `PROJECT_LOG.md`)
+- Checks run: design · docs · security · correctness (tests: no test file in scope, the diff holds no code under test; containers: compose untouched, `docker-auditor` skipped)
+- Verdict: ship after the Should fixes · Must 0 · Should 5 · Nice 4
 
 ## Pre-merge gate (head SHA of the fix commit)
 
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 94 unit (pytest), ruff check and format clean |
-| 2 Coverage | tests 100 % `domain.py`, 97 % `adapters.py` (branch coverage on; `main.py` excluded as wiring) · new public API docs 100 % after the fix (floor 90) |
-| 3 SonarQube | ✅ PASSED |
-| 4 Secrets | ✅ gitleaks clean on main..HEAD and the working tree · no tracked .env (only `.env.example`) · diff read: no IP, MAC, user or family name |
-| 5 QA pass | ✅ hardware check on the Pi 3: Discovery config and states on the broker; same scene 30.7 lx at 25×, 31.1 lx at 428×; agent restarted cleanly, no errors in its log |
-
-- Gate: **GREEN for push** (merge waits for CI, Codex review and owner approval)
+| 1 Tests | ✅ 101 unit (pytest, `pi3cam/`) · shellcheck clean on the new script · `systemd-analyze verify` clean on both units (the only message is the script path, not installed locally) · `systemd-analyze calendar` resolves the timer to Sunday 04:00 |
+| 2 Coverage | tests 93 % lines overall, 100 % on `domain.py` / `adapters.py` (`main.py` excluded as wiring; floor 80) · docs ~95 % of the new surface per `doc-auditor`, 100 % after the fixes (floor 90) |
+| 3 SonarQube | ✅ PASSED (new coverage 99.1 %, 0 new violations, 0 % duplication) |
+| 4 Secrets | ✅ gitleaks clean (`--log-opts=--all`) · no tracked .env (only `.env.example`) · diff read: no IP, MAC, host, user or family name, only `<user>`, `<pi5-host>`, `<notify_service>` placeholders |
+| 5 QA pass | ⚠️ pending: the product is the timer and the automation on the Pi 5, not installed yet (owner's `sudo`). Smoke to run after installation: `systemctl list-timers`, one manual `systemctl start docker-housekeeping.service` with its journal line, `docker system df`, and the automation saved in Home Assistant with a forced trigger (Run actions) |
+- Gate: **GREEN for the push** · **merge waits for step 5** (installation on the Pi 5, then the smoke above)
 
 ## 🔴 Must Have
-
-- `pi3cam/adapters.py` `Tsl2591Sensor.read` `[docs]` · no docstring for its contract (counts or None, blocking time) · fixed.
+_None._
 
 ## 🟡 Should Have
-
-- `pi3cam/adapters.py` `Tsl2591Sensor.__init__` `[security|correctness]` · the power-on write at construction could raise and stop the whole camera agent when the sensor is missing · fixed: no I²C access at construction, power-on at the first read.
-- `pi3cam/adapters.py` `read` `[correctness]` · after a brown-out the sensor stays off and reports zeros · fixed: power-on rewritten after every I²C error.
-- `pi3cam/adapters.py` `TSL_GAIN_BITS` `[design]` · unused 9876× entry · removed.
-- `pi3cam/domain.py` / `adapters.py` `[design]` · integration time split across files · cross-reference comments added.
-- `01-sequence-aim-and-look.md` `[docs]` · loop drawn on the Agent, not LightMeter; no-publish branch missing · fixed.
-- `pi3cam/README.md` `[docs]` · 88 000 lx limit unsourced · now cited as the datasheet range.
-- `pi3cam/tests/test_light.py` `[tests]` · IR high byte zero, no threshold boundaries, formula rebuilt in the test, payload rounding unchecked, failure mid-ranging untested · all fixed.
+- `deploy/pi5/disk-space-alert.yaml:22` `[design|security]` · both levels share `notification_id`, so a late "warning" (10 min `for:`) overwrites an earlier "critical" · `notification_id: "pi5_disk_space_{{ trigger.id }}"`
+- `deploy/pi5/disk-space-alert.yaml:10,16,25,30` `[design]` · the sensor entity id is written four times and the messages re-read the state instead of reporting the value that fired · `{{ trigger.to_state.state }}` in both messages, entity id left in the two triggers only
+- `deploy/pi5/disk-space-alert.yaml:2` `[docs]` · the comment "named after the mount point" does not match the entity id used · say the id is the usual default for `/` and where to adjust it
+- `deploy/pi5/README.md:55` `[docs]` · "the only thing it could remove" is overstated: no rollback image is kept either · reword, state the re-pull consequence
+- `deploy/pi5/docker-housekeeping.service:1` `[docs]` · no WHY: runs as root on purpose (Docker socket), launched by the timer · two-line header comment
 
 ## 🔵 Nice to Have
-
-- `pi3cam/domain.py` `lux` `[correctness]` · a strong infrared source reads as 0 lx; returning None would hold the last value · left as is (rare indoors; follow-up if seen).
-- `pi3cam/domain.py` `SATURATED` `[correctness]` · 36863 vs 37888 at 100 ms · conservative, drops the gain slightly early; kept.
-- `pi3cam/adapters.py` gains `[docs]` · 25/428 are the reference library's values, datasheet typicals are 24.5/400 · within the sensor's accuracy; kept.
-- `pi3cam/main.py` `[design]` · a second `MqttBus` instance · stateless, harmless; kept.
+- `deploy/pi5/disk-space-alert.yaml:27` `[security]` · `notify.<notify_service>` is refused by Home Assistant if pasted unchanged · ship the block commented out (applied: cheap, keeps the file pasteable)
+- `deploy/pi5/docker-housekeeping.service:7` `[security]` · a oneshot has no start timeout, a hung Docker daemon keeps the job open · `TimeoutStartSec=30min` (applied)
+- `deploy/pi5/docker-housekeeping.sh` `[correctness]` · committed as 100644 although `install -m 0755` fixes it on the Pi · `git update-index --chmod=+x` (applied)
+- `deploy/pi5/disk-space-alert.yaml:8` `[security]` · `numeric_state` fires on crossing only: a disk already above 85 % at HA start raises nothing · accepted for now; the weekly prune and the 95 % step cover it (not applied)
 
 ## ⚪ Disagree / Intentional
-
-- `pi3cam/domain.py` `[design]` · chip constants (LUX_DF, SATURATED) in the domain · pure arithmetic, no I/O; layering proportional (project CLAUDE.md).
+- `deploy/pi5/docker-housekeeping.sh` `[design]` · the wrapper could be two `ExecStart=` lines · kept: the `df` difference logs what really changed on disk, Docker's "reclaimed" figure is off with shared layers
+- `deploy/pi5/docker-housekeeping.sh:9` `[design]` · `docker builder prune` with no known build on the Pi 5 · kept: free, and bb-homelab may build
+- `README.md:47` + timer `[design]` · manual prune in the update procedure and a weekly timer · recorded MCDA decision (PROJECT_LOG 2026-10-30, 480/500)
+- `docker-housekeeping.service` `[security]` · no sandboxing directives · anything holding the Docker socket is root-equivalent, they would add nothing
 
 ## Per-dimension summary
-
-- Design: no over-engineering, dependency rule held · Docs: one missing docstring, two stale docs, fixed · Tests: trustworthy, strengthened · Security: no secrets or personal data; boot-robustness fixed · Correctness: register map and lux equation match the datasheet.
+- Design: proportionate, no new layer or container; two YAML fixes in the automation · Docs: ~95 %, three wording/WHY fixes · Tests: nothing testable in the diff, existing suite green · Security: no sensitive data, prune never touches volumes or stopped containers' images · Correctness: script and units verified under dash and `systemd-analyze`
