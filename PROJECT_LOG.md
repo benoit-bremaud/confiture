@@ -405,3 +405,21 @@
   the last valid value. True darkness (`full == 0`) still reports 0 lx.
 - Unit tests: true dark publishes `0.0`; IR above full publishes nothing. pi3cam suite 101 passed,
   `domain.py` 100 % covered. Not checked on the Pi 3 (no IR source at hand).
+
+## 2026-10-30 — TSL25911 constants traced to the datasheet (benoit-bremaud/confiture#12)
+
+- Checked against the ams TSL2591 datasheet DS000338 v3-00 (2023-02-08), section 6:
+  `SATURATED = 36863` matches "Max ADC count" at ATIME 100 ms (Figure 8); the 37888 seen
+  elsewhere comes from the older v2-00 revision (2015). The datasheet gives no lux equation,
+  so `LUX_DF = 408` is traced to the reference driver only.
+- Gains: datasheet typical 24.5x (22-27) and 400x (360-440). First decision (MCDA): align on
+  the typical values (420/500) over keeping 25/428 (380/500).
+- Pi 3 check, one stable scene, three gains: high/medium count ratio 17.09 (25/428 gives
+  17.12, 24.5/400 gives 16.33). Lux spread medium vs high: 1.5 % with 25/428, 6.5 % with
+  24.5/400, so the typical values failed the acceptance criterion.
+- Revised decision (MCDA): keep 25/428, inside the datasheet tolerance and matching this unit,
+  with the datasheet values and the measurement cited in the comment (500/500) over the typical
+  values (310/500) and per-unit calibrated ratios (390/500). Values unchanged, so the unit tests
+  pinning lux values stay as they are.
+- Deployed pi3cam to the Pi 3 (backup `~/pi3cam-backup/pre-12/`), which also ships
+  benoit-bremaud/confiture#11; the agent publishes 33.2 lx for that scene.
