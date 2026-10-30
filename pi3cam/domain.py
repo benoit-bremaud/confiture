@@ -36,13 +36,20 @@ DELETE_PREFIX = f"{TRASH} Supprimer « "
 HA_APPLY_DELAY = 0.5  # let HA apply new select options before the state
 NAME_MAX = 30
 
-# TSL25911 light sensor (confiture#8): auto-ranged gain.
+# TSL25911 light sensor (confiture#8): auto-ranged gain. Sources (confiture#12): ams
+# TSL2591 datasheet DS000338 v3-00 (2023-02-08), section 6 Electrical Characteristics.
 LIGHT_PERIOD = 30  # s between illuminance reports
-GAINS = (1, 25, 428)  # low, medium, high: medium first, then auto-ranged
+# Low, medium, high gain. Datasheet "Gain scaling" (Figure 8): medium 24.5x typ (22-27),
+# high 400x typ (360-440). 25 and 428 (reference driver) are inside that tolerance and
+# match this unit: measured high/medium count ratio 17.09 on the Pi 3 (2026-10-30), 1.5 %
+# lux spread versus 6.5 % with the typical values.
+GAINS = (1, 25, 428)  # medium first, then auto-ranged
 INTEGRATION_MS = 100  # set by the adapter (TSL_ATIME_100MS)
-SATURATED = 36863  # full count at 100 ms (datasheet)
+SATURATED = 36863  # "Max ADC count" at ATIME 100 ms (Figure 8); 65535 from 200 ms
 TOO_DARK = 100  # below this full-spectrum count, a higher gain gives better resolution
-LUX_DF = 408  # device factor of the reference lux equation
+# Device factor of the reference lux equation (ams/Adafruit TSL2591 driver): the
+# datasheet gives no lux equation, so this value is traced to the driver only.
+LUX_DF = 408
 
 DEVICE = {
     "availability_topic": f"{BASE}/status",
