@@ -436,4 +436,9 @@
   volumes; `until=` would not protect a freshly pulled image (it filters on image creation
   date), so the timer runs Sunday 04:00 instead.
 - Added `deploy/pi5/docker-housekeeping.{sh,service,timer}` and `deploy/pi5/disk-space-alert.yaml`,
-  documented in `deploy/pi5/README.md`. Installation on the Pi 5 pending (owner's `sudo`).
+  documented in `deploy/pi5/README.md`. Local review (`docs/architecture/review-local.md`):
+  0 Must, 5 Should fixed (one notification id per level, trigger value in the messages, notify
+  block shipped commented out, service header and timeout).
+- Installed on the Pi 5: timer enabled (next run Sunday 04:00), first manual run `freed 0 MiB`
+  (card pruned by hand that morning), 13 images all in use, 0 B reclaimable, unused volumes
+  untouched, disk at 80 %. The Home Assistant automation is added through the UI.

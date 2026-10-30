@@ -16,8 +16,8 @@ Pre-push review of issue #19, Pi 5 disk housekeeping; every Should finding was f
 | 2 Coverage | tests 93 % lines overall, 100 % on `domain.py` / `adapters.py` (`main.py` excluded as wiring; floor 80) · docs ~95 % of the new surface per `doc-auditor`, 100 % after the fixes (floor 90) |
 | 3 SonarQube | ✅ PASSED (new coverage 99.1 %, 0 new violations, 0 % duplication) |
 | 4 Secrets | ✅ gitleaks clean (`--log-opts=--all`) · no tracked .env (only `.env.example`) · diff read: no IP, MAC, host, user or family name, only `<user>`, `<pi5-host>`, `<notify_service>` placeholders |
-| 5 QA pass | ⚠️ pending: the product is the timer and the automation on the Pi 5, not installed yet (owner's `sudo`). Smoke to run after installation: `systemctl list-timers`, one manual `systemctl start docker-housekeeping.service` with its journal line, `docker system df`, and the automation saved in Home Assistant with a forced trigger (Run actions) |
-- Gate: **GREEN for the push** · **merge waits for step 5** (installation on the Pi 5, then the smoke above)
+| 5 QA pass | ✅ smoke on the Pi 5 (2026-10-30, owner's `sudo`): timer enabled, next run Sunday 2026-11-01 04:00; manual run finished, journal `freed 0 MiB on /` (the card had been pruned by hand that morning); `docker system df`: 13 images all in use, 0 B reclaimable, 2 unused volumes left untouched (4 MB); disk 80 % · ⚠️ the Home Assistant automation is pasted by the owner in the UI (placeholder notify service), tested with "Run actions" |
+- Gate: **GREEN — merge authorised** once the automation is saved in Home Assistant
 
 ## 🔴 Must Have
 _None._
