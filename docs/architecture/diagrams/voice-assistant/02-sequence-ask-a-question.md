@@ -60,5 +60,5 @@ sequenceDiagram
   answer can never act on the house.
 - Time to first audio (NFR-2, NFR-5) runs from the sentence to the Nest starting to play:
   it includes Piper synthesis and the Cast fetch, measured in ADR-0006.
-- The friendly "I can't think right now" message of ADR-0004 is not yet built: today the
-  down-host branch returns Home Assistant's own error.
+- The friendly "I can't think right now" message of ADR-0004 and the thinking cue of NFR-5 are
+  spoken by `nest-relay`: [`05-sequence-thinking-cue-and-fallback.md`](05-sequence-thinking-cue-and-fallback.md).

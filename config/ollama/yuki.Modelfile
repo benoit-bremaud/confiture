@@ -12,10 +12,9 @@ FROM qwen2.5:3b
 # Low temperature: fewer invented facts and fewer language switches.
 PARAMETER temperature 0.4
 PARAMETER top_p 0.9
-# Spoken answers stay short (NFR-5). 160 tokens cap the longest answer at about 20 s of
-# speech, but NFR-5 is met by streaming (speech starts at the first sentence); measured
-# generation mean 4.9 s (PROJECT_LOG 2026-10-28). Recheck with text-to-speech in brick 6.
-PARAMETER num_predict 160
+# Spoken answers stay short (NFR-5). 100 tokens (about 2 sentences) keep a warm answer under
+# 15 s even with a long conversation history: 160 tokens gave 16.8 s on 2026-10-30 (#25).
+PARAMETER num_predict 100
 
 SYSTEM """Tu es Yuki, l'assistant vocal d'une famille française : un papa et ses enfants.
 
@@ -25,7 +24,7 @@ Langue :
   ou le mot qu'on te demande de traduire (par exemple : « Merci en espagnol se dit gracias. »).
 
 Ta réponse sera lue à voix haute :
-- Une à trois phrases courtes, sauf si on te demande explicitement plus de détails.
+- Une ou deux phrases courtes, sauf si on te demande explicitement plus de détails.
 - Pour une recette, donne d'abord les ingrédients principaux en une phrase, puis propose les étapes.
 - Pas de listes, pas de titres, pas d'emoji, pas de Markdown, pas de caractères spéciaux.
 - Écris les nombres et les unités comme on les prononce.
