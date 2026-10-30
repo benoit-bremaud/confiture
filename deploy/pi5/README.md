@@ -43,6 +43,46 @@ docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' confiture-piper     # true
   without the cgroup keeps `HostConfig.Memory` at 0. Check with
   `docker inspect -f '{{.HostConfig.Memory}}' confiture-piper` (1073741824).
 - Update: Dependabot proposes the new tag and digest in `compose.yaml`; review it, copy the
+  files again with the `scp` line above, then `docker compose -p confiture pull`, `up -d` and
+  `docker image prune -a -f` (the old image is otherwise left on the card, see below).
+
+## Disk housekeeping
+
+On 2026-10-30 the 29 GB card reached 99 %: every image update leaves the previous image behind
+(~1 GB each, 6 GB in total). Two pieces keep this from happening again, no container added:
+
+- `docker-housekeeping.sh` removes the images no container uses and the build cache, every
+  Sunday at 04:00 through a systemd timer (`Persistent=true` catches a week the Pi was off).
+  It never prunes volumes, containers or networks. The one risk is an image pulled but not yet
+  started by `up -d`: it would be pruned and re-pulled, hence the Sunday-night slot. No
+  rollback image is kept either: to roll back, pull the old tag again.
+- `disk-space-alert.yaml` is a Home Assistant automation that notifies at 85 % (10 minutes
+  sustained) and at 95 % disk use, for what the prune does not cover (logs, recorder, models).
+
+Install the timer from the Pi 5 (`sudo` steps):
+
+```sh
+scp deploy/pi5/docker-housekeeping.* <user>@<pi5-host>:confiture-pi5/
+ssh -t <user>@<pi5-host> 'cd confiture-pi5 &&
+  sudo install -m 0755 docker-housekeeping.sh /usr/local/bin/ &&
+  sudo install -m 0644 docker-housekeeping.service docker-housekeeping.timer /etc/systemd/system/ &&
+  sudo systemctl daemon-reload && sudo systemctl enable --now docker-housekeeping.timer'
+```
+
+Check:
+
+```sh
+systemctl list-timers docker-housekeeping.timer        # next run: Sunday 04:00
+sudo systemctl start docker-housekeeping.service       # first run by hand
+journalctl -u docker-housekeeping.service -n 5         # "freed N MiB on /"
+docker system df
+```
+
+Alert: in Home Assistant, add the System Monitor integration (Settings → Integrations) with the
+`/` disk sensor, then Settings → Automations → Create → Edit in YAML, paste
+`disk-space-alert.yaml`, check the sensor entity id (default `sensor.system_monitor_disk_usage`)
+and uncomment the notify block with your service (the file keeps a placeholder only).
+
   files again with the `scp` line above, then `docker compose -p confiture pull` and `up -d`.
 
 ## Speech-to-text and the microphone satellite

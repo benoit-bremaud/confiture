@@ -424,6 +424,25 @@
 - Deployed pi3cam to the Pi 3 (backup `~/pi3cam-backup/pre-12/`), which also ships
   benoit-bremaud/confiture#11; the agent publishes 33.2 lx for that scene.
 
+## 2026-10-30 — Pi 5 disk housekeeping (issue benoit-bremaud/confiture#19)
+
+- The 29 GB card hit 99 %: ~6 GB of images left behind by updates (Piper, faster-whisper,
+  bb-homelab); `docker image prune -a` brought it back to 80 %. Rule: prune after every
+  `compose pull` + `up -d` (README update procedure).
+- Decision (MCDA, criteria reliability 30 / alert 25 / simplicity 25 / safety 20): weekly systemd
+  timer + prune in the update procedure + Home Assistant alert at 85 % and 95 % (480/500) over
+  timer + single alert (435), timer alone (345) and `docker system prune` (375: it removes
+  stopped containers). `prune -a` keeps the images of stopped containers and never touches
+  volumes; `until=` would not protect a freshly pulled image (it filters on image creation
+  date), so the timer runs Sunday 04:00 instead.
+- Added `deploy/pi5/docker-housekeeping.{sh,service,timer}` and `deploy/pi5/disk-space-alert.yaml`,
+  documented in `deploy/pi5/README.md`. Local review (`docs/architecture/review-local.md`):
+  0 Must, 5 Should fixed (one notification id per level, trigger value in the messages, notify
+  block shipped commented out, service header and timeout).
+- Installed on the Pi 5: timer enabled (next run Sunday 04:00), first manual run `freed 0 MiB`
+  (card pruned by hand that morning), 13 images all in use, 0 B reclaimable, unused volumes
+  untouched, disk at 80 %. The Home Assistant automation is added through the UI.
+
 ## 2026-10-30 — Speech-to-text and the microphone satellite on the Pi 5 (benoit-bremaud/confiture#18)
 
 - UML first: `04-sequence-ask-by-voice.md` validated by the owner. Satellite (MCDA): the
