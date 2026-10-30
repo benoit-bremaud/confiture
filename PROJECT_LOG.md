@@ -423,3 +423,17 @@
   pinning lux values stay as they are.
 - Deployed pi3cam to the Pi 3 (backup `~/pi3cam-backup/pre-12/`), which also ships
   benoit-bremaud/confiture#11; the agent publishes 33.2 lx for that scene.
+
+## 2026-10-30 — Pi 5 disk housekeeping (issue benoit-bremaud/confiture#19)
+
+- The 29 GB card hit 99 %: ~6 GB of images left behind by updates (Piper, faster-whisper,
+  bb-homelab); `docker image prune -a` brought it back to 80 %. Rule: prune after every
+  `compose pull` + `up -d` (README update procedure).
+- Decision (MCDA, criteria reliability 30 / alert 25 / simplicity 25 / safety 20): weekly systemd
+  timer + prune in the update procedure + Home Assistant alert at 85 % and 95 % (480/500) over
+  timer + single alert (435), timer alone (345) and `docker system prune` (375: it removes
+  stopped containers). `prune -a` keeps the images of stopped containers and never touches
+  volumes; `until=` would not protect a freshly pulled image (it filters on image creation
+  date), so the timer runs Sunday 04:00 instead.
+- Added `deploy/pi5/docker-housekeeping.{sh,service,timer}` and `deploy/pi5/disk-space-alert.yaml`,
+  documented in `deploy/pi5/README.md`. Installation on the Pi 5 pending (owner's `sudo`).

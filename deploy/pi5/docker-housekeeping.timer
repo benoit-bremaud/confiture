@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly Docker housekeeping
+
+[Timer]
+# Sunday night: nobody updates a stack then, so a freshly pulled image is never pruned
+# before its `up -d`. Persistent catches a run missed while the Pi was off.
+OnCalendar=Sun *-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
