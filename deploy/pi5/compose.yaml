@@ -81,11 +81,17 @@ services:
     tmpfs: [/tmp]
     # ~100 MiB measured on the Pi 5 after spoken turns (2026-10-30); bound with headroom.
     mem_limit: 256m
+    # Host networking: the satellite fetches each reply from Home Assistant's TTS URL, and ufw
+    # drops bridge-to-host traffic, so mpv hung ~60 s per reply with the wake word ignored (#26).
+    # It now plays the reply on PipeWire's null sink and listens again when the reply ends.
+    network_mode: host
     environment:
       CLIENT_NAME: yuki_living_room
-      HOST: 0.0.0.0
-      # Fixed, locally administered: the bridge MAC changes on every recreate, and Home
-      # Assistant would then see a new device.
+      # Loopback only: the ESPHome API (6053) and the peripheral events (6055) have no
+      # authentication; Home Assistant and nest-relay run on this host.
+      HOST: 127.0.0.1
+      PERIPHERAL_HOST: 127.0.0.1
+      # Fixed, locally administered: Home Assistant keys the device on it.
       MAC_ADDRESS: ${SATELLITE_MAC:?set SATELLITE_MAC in .env (see .env.example)}
       XDG_RUNTIME_DIR: /run/user/${PI5_UID:-1000}
       PULSE_SERVER: /run/user/${PI5_UID:-1000}/pulse/native
@@ -93,11 +99,6 @@ services:
       - ./satellite/configuration:/app/configuration
       - ./satellite/local:/app/local
       - /run/user/${PI5_UID:-1000}/pulse:/run/user/${PI5_UID:-1000}/pulse
-    # Home Assistant adds it by hand at 127.0.0.1:6053 (no mDNS through the bridge).
-    ports:
-      - "127.0.0.1:6053:6053"
-      # Peripheral events (tts_text) for nest-relay; it has no authentication: loopback only.
-      - "127.0.0.1:6055:6055"
     # The image ships its own HEALTHCHECK.
 
   nest-relay:

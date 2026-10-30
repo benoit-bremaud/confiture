@@ -47,6 +47,11 @@ sequenceDiagram
     Agent-->>HA: reply text
     HA-->>Sat: tts-end (reply text)
     Sat-->>Relay: tts_text event (WebSocket, loopback :6055)
+    par local playback (no speaker)
+      Sat->>HA: GET TTS URL
+      HA-->>Sat: audio, played on the null sink
+      Note over Sat: wake word active again when playback ends
+    end
     Relay->>HA: script.yuki_speak(text) (REST, token)
     HA->>Piper: tts.speak → synthesize(text)
     Piper-->>HA: audio (WAV)
@@ -60,4 +65,7 @@ sequenceDiagram
 - Audio never leaves the Pi 5 and is never stored (REQ-20: the question log keeps text only).
 - STT latency (acceptance of benoit-bremaud/confiture#18, at most 3 s) runs from `audio-stop`
   to the transcript; the model is chosen by the bench, ADR-0008.
+- The satellite still plays each reply locally on PipeWire's null sink, which keeps the wake
+  word off for the length of the reply only. It reaches Home Assistant's TTS URL over host
+  networking: ufw drops bridge-to-host traffic, which kept it deaf ~60 s per reply (#26).
 - Mermaid has no `ref` fragment: the interaction use is drawn as a note.
