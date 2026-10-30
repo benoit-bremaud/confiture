@@ -58,6 +58,13 @@ sequenceDiagram
 - A `pipeline_error` before `thinking` (wake word taken by another satellite, nothing
   understood) is not a turn: the relay stays silent, as before.
 - A `pipeline_error` within 2 s speaks the fallback without the cue.
+- Event names are the satellite's peripheral events (Linux Voice Assistant 1.1.18,
+  `peripheral_api.LVAEvent`): `thinking` is sent at every intent start, known commands
+  included; `idle` at the end of the run closes the turn, so a reply after a fallback is
+  dropped only within the same run.
+- `nest-relay` speaks one text at a time and waits for each Home Assistant call (10 s timeout):
+  the cue finishes before the reply is sent. If Home Assistant itself is down, nothing can be
+  spoken and the relay only logs a warning.
 - The timers live in `nest-relay`, not in Home Assistant: no Home Assistant change, and the
   logic is a pure state machine with unit tests (the clock is injected).
 - The cue and the fallback are fixed French sentences, gentle and child-friendly (REQ-9); the LLM

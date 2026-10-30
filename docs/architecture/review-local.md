@@ -1,45 +1,49 @@
-# Local review — confiture (chore/19-pi5-disk-housekeeping)
+# Local review — confiture (feat/25-llm-thinking-cue-fallback)
 
-Pre-push review of issue #19, Pi 5 disk housekeeping; every Should finding was fixed on the branch in the commit after the review.
+Pre-push review of issue #25, thinking cue and friendly fallback in `nest-relay`; every Must and Should finding was fixed on the branch in the commit after the review.
 
 - Date: 2026-10-30
-- Commit: eed13a1 (review run), fixes in the next commit
-- Scope: branch diff main...HEAD (6 files: `deploy/pi5/docker-housekeeping.{sh,service,timer}`, `deploy/pi5/disk-space-alert.yaml`, `deploy/pi5/README.md`, `PROJECT_LOG.md`)
-- Checks run: design · docs · security · correctness (tests: no test file in scope, the diff holds no code under test; containers: compose untouched, `docker-auditor` skipped)
-- Verdict: ship after the Should fixes · Must 0 · Should 5 · Nice 4
+- Commit: 08fe384 (review run), fixes in the next commit
+- Scope: branch diff main...HEAD (`deploy/pi5/nest-relay/{relay,main}.py`, tests, `05-sequence-thinking-cue-and-fallback.md`, `02-sequence-ask-a-question.md`, `PROJECT_LOG.md`)
+- Checks run: design · docs · tests · security · correctness (containers: Dockerfile and compose untouched, `docker-auditor` skipped)
+- Verdict: ship after the fixes · Must 2 · Should 6 · Nice 3
 
 ## Pre-merge gate (head SHA of the fix commit)
 
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 101 unit (pytest, `pi3cam/`) · shellcheck clean on the new script · `systemd-analyze verify` clean on both units (the only message is the script path, not installed locally) · `systemd-analyze calendar` resolves the timer to Sunday 04:00 |
-| 2 Coverage | tests 93 % lines overall, 100 % on `domain.py` / `adapters.py` (`main.py` excluded as wiring; floor 80) · docs ~95 % of the new surface per `doc-auditor`, 100 % after the fixes (floor 90) |
-| 3 SonarQube | ✅ PASSED (new coverage 99.1 %, 0 new violations, 0 % duplication) |
-| 4 Secrets | ✅ gitleaks clean (`--log-opts=--all`) · no tracked .env (only `.env.example`) · diff read: no IP, MAC, host, user or family name, only `<user>`, `<pi5-host>`, `<notify_service>` placeholders |
-| 5 QA pass | ✅ smoke on the Pi 5 (2026-10-30, owner's `sudo`): timer enabled, next run Sunday 2026-11-01 04:00; manual run finished, journal `freed 0 MiB on /` (the card had been pruned by hand that morning); `docker system df`: 13 images all in use, 0 B reclaimable, 2 unused volumes left untouched (4 MB); disk 80 % · ⚠️ the Home Assistant automation is pasted by the owner in the UI (placeholder notify service), tested with "Run actions" |
-- Gate: **GREEN — merge authorised** once the automation is saved in Home Assistant
+| 1 Tests | ✅ nest-relay 18 unit + 2 `speak_all` · pi3cam 101 · sttbench 13 |
+| 2 Coverage | `relay.py` 100 % (`main.py` wiring excluded in `sonar-project.properties`, `speak_all` tested) · docs: every public function and class has a docstring |
+| 3 SonarQube | ✅ PASSED (new coverage 99.3 %, 0 new violations, 0 % duplication) |
+| 4 Secrets | ✅ gitleaks clean (full history) · no tracked .env · diff read: placeholders only |
+| 5 QA pass | ✅ spoken on the Pi 5 by the owner: "quelle heure est-il ?" local, no cue · free question cue at 2.0 s, answer at 11.9 s · Ollama stopped: fallback in 0.1 s |
+
+- Gate: **GREEN** once the fix commit is redeployed and re-spoken (owner approval)
 
 ## 🔴 Must Have
-_None._
+
+- `deploy/pi5/nest-relay/relay.py:65` `[design|correctness]` · the "closed" latch dropped every reply until the next `thinking` · fixed: the latch drops only the one late reply, `pipeline_error` does not latch (the run ended), `idle` clears the turn; 3 tests.
+- `deploy/pi5/nest-relay/main.py:43` `[tests]` · `speak_all` HA-failure path untested after `relay()` was removed · fixed: `tests/test_main.py`, and any other speaker exception is logged instead of stopping the relay.
 
 ## 🟡 Should Have
-- `deploy/pi5/disk-space-alert.yaml:22` `[design|security]` · both levels share `notification_id`, so a late "warning" (10 min `for:`) overwrites an earlier "critical" · `notification_id: "pi5_disk_space_{{ trigger.id }}"`
-- `deploy/pi5/disk-space-alert.yaml:10,16,25,30` `[design]` · the sensor entity id is written four times and the messages re-read the state instead of reporting the value that fired · `{{ trigger.to_state.state }}` in both messages, entity id left in the two triggers only
-- `deploy/pi5/disk-space-alert.yaml:2` `[docs]` · the comment "named after the mount point" does not match the entity id used · say the id is the usual default for `/` and where to adjust it
-- `deploy/pi5/README.md:55` `[docs]` · "the only thing it could remove" is overstated: no rollback image is kept either · reword, state the re-pull consequence
-- `deploy/pi5/docker-housekeeping.service:1` `[docs]` · no WHY: runs as root on purpose (Docker socket), launched by the timer · two-line header comment
+
+- `deploy/pi5/nest-relay/main.py:54` `[design]` · one `Turn` shared across reconnects spoke a stale fallback · fixed: new `Turn` per connection.
+- `deploy/pi5/nest-relay/relay.py:40` `[design|tests]` · `reply_text` dead code and its tests · fixed: removed, parsing tested on `parse_event`.
+- `deploy/pi5/nest-relay/tests/test_relay.py:58` `[tests]` · cue then fallback sequence not asserted · fixed, plus late tick, error after cue, second `thinking`.
+- `deploy/pi5/nest-relay/relay.py:1` `[docs]` · module docstring stale · fixed.
+- `docs/architecture/diagrams/voice-assistant/05-sequence-thinking-cue-and-fallback.md` `[docs]` · source of the `thinking` event, HA-down case, blocking speak · fixed in Notes (LVA 1.1.18 `peripheral_api.LVAEvent`; `yuki_speak` is `mode: queued`, checked in `config/homeassistant/yuki_speak.yaml`).
+- `deploy/pi5/nest-relay/main.py:62` `[correctness]` · speaking blocks the loop up to 10 s · intentional (cue before reply), documented in `speak_all` and diagram 05.
 
 ## 🔵 Nice to Have
-- `deploy/pi5/disk-space-alert.yaml:27` `[security]` · `notify.<notify_service>` is refused by Home Assistant if pasted unchanged · ship the block commented out (applied: cheap, keeps the file pasteable)
-- `deploy/pi5/docker-housekeeping.service:7` `[security]` · a oneshot has no start timeout, a hung Docker daemon keeps the job open · `TimeoutStartSec=30min` (applied)
-- `deploy/pi5/docker-housekeeping.sh` `[correctness]` · committed as 100644 although `install -m 0755` fixes it on the Pi · `git update-index --chmod=+x` (applied)
-- `deploy/pi5/disk-space-alert.yaml:8` `[security]` · `numeric_state` fires on crossing only: a disk already above 85 % at HA start raises nothing · accepted for now; the weekly prune and the 95 % step cover it (not applied)
+
+- `deploy/pi5/nest-relay/relay.py:36` `[design]` · strip expression precedence hard to read · fixed.
+- `deploy/pi5/nest-relay/main.py:40` `[correctness]` · polling every 0.25 s instead of a computed deadline · kept (KISS).
+- `deploy/pi5/nest-relay/main.py` `[security]` · reply length not capped before HA · not done; text comes from the local satellite.
 
 ## ⚪ Disagree / Intentional
-- `deploy/pi5/docker-housekeeping.sh` `[design]` · the wrapper could be two `ExecStart=` lines · kept: the `df` difference logs what really changed on disk, Docker's "reclaimed" figure is off with shared layers
-- `deploy/pi5/docker-housekeeping.sh:9` `[design]` · `docker builder prune` with no known build on the Pi 5 · kept: free, and bb-homelab may build
-- `README.md:47` + timer `[design]` · manual prune in the update procedure and a weekly timer · recorded MCDA decision (PROJECT_LOG 2026-10-30, 480/500)
-- `docker-housekeeping.service` `[security]` · no sandboxing directives · anything holding the Docker socket is root-equivalent, they would add nothing
+
+- `deploy/pi5/nest-relay/relay.py` `[design]` · no State pattern for `Turn` · three fields, no present force (design-patterns gate).
 
 ## Per-dimension summary
-- Design: proportionate, no new layer or container; two YAML fixes in the automation · Docs: ~95 %, three wording/WHY fixes · Tests: nothing testable in the diff, existing suite green · Security: no sensitive data, prune never touches volumes or stopped containers' images · Correctness: script and units verified under dash and `systemd-analyze`
+
+- Design: pure state machine, one latch defect fixed · Docs: diagram 05 matches the code · Tests: pyramid of fast unit tests, wiring helper now tested · Security: no secret, text logged as length only, JSON body to a fixed URL · Correctness: `wait_for(ws.recv())` cancel-safe in websockets 17.3, `TimeoutError` right on Python 3.13.
